@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
-        <!-- Favicon Pelayar Web -->
-    <link rel="icon" type="image/png" href="https://github.com/Boukenn/kembara-bm-tahun-6/blob/6ee0b81a5d2dee5e6837617b0dd71cb94884b76b/iconbm.png">
-
-    <!-- Meta Tags untuk Paparan Preview Cantik di WhatsApp / Telegram / Facebook -->
-    <meta property="og:title" content="Kembara Bahasa Melayu Tahun 6 (KPM 2026)">
-    <meta property="og:description" content="Platform Gamified Learning interaktif untuk murid Tahun 6 mengikut piawaian KPM 2026.">
-    <meta property="og:image" content="https://github.com/Boukenn/kembara-bm-tahun-6/blob/6ee0b81a5d2dee5e6837617b0dd71cb94884b76b/iconbm.png">
-    <meta property="og:type" content="website">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kembara Bahasa Melayu Tahun 6</title>
+    <title>Kembara Bahasa Melayu Tahun 6 (KPM 2026) - Gamified & Live</title>
+
+    <!-- Favicon & Ikon Aplikasi (GitHub Raw Direct Link) -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Boukenn/kembara-bm-tahun-6/main/iconbm.png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/Boukenn/kembara-bm-tahun-6/main/iconbm.png">
+
+    <!-- Meta Tags Open Graph untuk Paparan Preview Cantik di WhatsApp / Telegram / Facebook -->
+    <meta property="og:title" content="Kembara Bahasa Melayu Tahun 6 (KPM 2026)">
+    <meta property="og:description" content="Platform Gamified Learning interaktif untuk murid Tahun 6 mengikut piawaian KPM 2026.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/Boukenn/kembara-bm-tahun-6/main/iconbm.png">
+    <meta property="og:url" content="https://boukenn.github.io/kembara-bm-tahun-6/">
+    <meta property="og:type" content="website">
+
     <!-- Google Fonts & Font Awesome Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -184,6 +188,17 @@
             box-shadow: 0 15px 30px rgba(0,0,0,0.3);
             position: relative;
             z-index: 2;
+        }
+
+        .auth-logo-img {
+            width: 82px;
+            height: 82px;
+            border-radius: 20px;
+            object-fit: cover;
+            margin: 0 auto 10px auto;
+            display: block;
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
+            border: 3px solid #EEF2FF;
         }
 
         .auth-card h1 {
@@ -959,8 +974,7 @@
                 <div id="firebase-status-badge" class="cloud-status-pill">
                     <i class="fa-solid fa-spinner fa-spin"></i> Menyambung ke Firebase...
                 </div>
-                <br>
-                <i class="fa-solid fa-gamepad" style="font-size: 3.3rem; color: var(--primary); margin-bottom: 8px;"></i>
+                <img src="https://raw.githubusercontent.com/Boukenn/kembara-bm-tahun-6/main/iconbm.png" alt="Logo Kembara BM" class="auth-logo-img" onerror="this.style.display='none'">
                 <h1>Kembara BM Tahun 6</h1>
                 <p style="color: #64748B; font-weight: 700; margin-bottom: 14px;">Piawaian KPM 2026 • Arena Permainan Interaktif</p>
                 
@@ -1104,7 +1118,7 @@
 
                 <!-- Tab Navigasi Admin -->
                 <div class="admin-tabs">
-                    <button type="button" class="admin-tab-btn live-tab active" data-tab="live"><i class="fa-solid fa-tower-broadcast"></i> Pancaran Live</button>
+                    <button type="button" class="admin-tab-btn live-tab active" data-tab="live"><i class="fa-solid fa-tower-broadcast"></i> Pancaran Live (Kahoot/Quizizz)</button>
                     <button type="button" class="admin-tab-btn" data-tab="questions"><i class="fa-solid fa-circle-question"></i> Urus Soalan</button>
                     <button type="button" class="admin-tab-btn" data-tab="phases"><i class="fa-solid fa-layer-group"></i> Urus Fasa</button>
                     <button type="button" class="admin-tab-btn" data-tab="modules"><i class="fa-solid fa-cubes"></i> Urus Modul</button>
@@ -1188,7 +1202,7 @@
 
                         <div style="text-align: right;">
                             <button type="button" id="btn-save-question" class="btn-sm btn-success-sm">
-                                <i class="fa-solid fa-cloud-arrow-up"></i> Simpan Soalan
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Simpan Soalan ke Firebase
                             </button>
                         </div>
                     </div>
