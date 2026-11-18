@@ -1,0 +1,4031 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kembara Bahasa Melayu Tahun 6 (KPM 2026) - Gamified & Live</title>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase App & Firestore SDK (Compat Version untuk HTML Tunggal) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --secondary: #06B6D4;
+            --accent-yellow: #F59E0B;
+            --accent-green: #10B981;
+            --accent-red: #EF4444;
+            --accent-purple: #8B5CF6;
+            --bg-gradient: linear-gradient(135deg, #090D16 0%, #1E1B4B 50%, #2E1065 100%);
+            --card-bg: rgba(255, 255, 255, 0.97);
+            --text-dark: #1E293B;
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.35), 0 10px 10px -5px rgba(0, 0, 0, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Nunito', sans-serif;
+            user-select: none;
+        }
+
+        input, select, textarea {
+            user-select: text !important;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-dark);
+            overflow-x: hidden;
+            padding: clamp(8px, 2vw, 18px);
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 1040px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: clamp(18px, 3vw, 28px);
+            box-shadow: var(--shadow-lg);
+            padding: clamp(12px, 2.5vw, 24px);
+            position: relative;
+            min-height: min(680px, 94dvh);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Status Sambungan Cloud */
+        .cloud-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 5px 14px;
+            border-radius: 20px;
+            background: #FEF3C7;
+            color: #B45309;
+            margin-bottom: 12px;
+        }
+
+        .cloud-status-pill.connected {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .cloud-status-pill.offline {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        /* Bar Header */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 12px 22px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .user-profile-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 800;
+        }
+
+        .avatar-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .stats-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-badge {
+            background: #F1F5F9;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-dark);
+        }
+
+        .stat-badge.score i { color: var(--accent-yellow); }
+        .stat-badge.streak i { color: var(--accent-red); }
+
+        /* Skrin Management */
+        .screen {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 1. Skrin Pendaftaran Gaya Kahoot/Quizizz */
+        .auth-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 32px 24px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            margin: auto;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .auth-card h1 {
+            font-family: 'Fredoka One', cursive;
+            color: var(--primary);
+            font-size: 2.1rem;
+            margin-bottom: 6px;
+        }
+
+        .avatar-selector {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 18px 0;
+            flex-wrap: wrap;
+        }
+
+        .avatar-option {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            z-index: 5;
+            touch-action: manipulation;
+        }
+
+        .avatar-option i {
+            pointer-events: none;
+        }
+
+        .avatar-option:hover {
+            transform: scale(1.08);
+            background: #CBD5E1;
+        }
+
+        .avatar-option.selected {
+            border-color: var(--primary);
+            background: #EEF2FF;
+            transform: scale(1.15);
+            color: var(--primary);
+        }
+
+        .btn-action, .btn-back, .menu-card, .phase-card, .dpad-btn, .option-btn, .admin-tab-btn, .btn-sm {
+            cursor: pointer;
+            position: relative;
+            z-index: 5;
+            touch-action: manipulation;
+        }
+
+        .input-group {
+            margin-bottom: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 13px 18px;
+            border: 2px solid #CBD5E1;
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+        /* Grid Modul & Fasa */
+        .welcome-hero {
+            text-align: center;
+            color: white;
+            margin-bottom: 18px;
+        }
+
+        .welcome-hero h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2rem;
+            color: #FDE047;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+            gap: 16px;
+        }
+
+        .menu-card {
+            background: var(--card-bg);
+            border-radius: 22px;
+            padding: 20px 16px;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 3px solid transparent;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.18);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .menu-card.c-1 { border-color: var(--accent-yellow); }
+        .menu-card.c-2 { border-color: var(--accent-red); }
+        .menu-card.c-3 { border-color: var(--secondary); }
+        .menu-card.c-4 { border-color: var(--accent-purple); }
+        .menu-card.c-5 { border-color: var(--accent-green); }
+
+        .game-mode-pill {
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #1E293B;
+            color: #FDE047;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .menu-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.7rem;
+            color: white;
+            margin: 4px 0;
+        }
+
+        .c-1 .menu-icon { background: var(--accent-yellow); }
+        .c-2 .menu-icon { background: var(--accent-red); }
+        .c-3 .menu-icon { background: var(--secondary); }
+        .c-4 .menu-icon { background: var(--accent-purple); }
+        .c-5 .menu-icon { background: var(--accent-green); }
+
+        /* Grid Fasa Pembelajaran */
+        .phase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+            gap: 14px;
+            margin-top: 15px;
+        }
+
+        .phase-card {
+            background: white;
+            border-radius: 18px;
+            padding: 16px 12px;
+            text-align: center;
+            box-shadow: 0 6px 0 #CBD5E1;
+            border: 2px solid #E2E8F0;
+            position: relative;
+            transition: 0.2s;
+        }
+
+        .phase-card:hover:not(.locked) {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .phase-card.locked {
+            background: #F1F5F9;
+            opacity: 0.65;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .phase-card .phase-number {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.25rem;
+            color: var(--primary);
+        }
+
+        .phase-card.locked .phase-number {
+            color: #94A3B8;
+        }
+
+        .phase-card .status-icon {
+            font-size: 1.2rem;
+            margin-top: 6px;
+        }
+
+        /* Game Board Common */
+        .game-board {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            min-height: 520px;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-back {
+            background: #E2E8F0;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 800;
+            color: #475569;
+            transition: 0.15s;
+        }
+
+        .btn-back:hover {
+            background: #CBD5E1;
+        }
+
+        .instruction-box {
+            text-align: center;
+            font-size: 1.12rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+            background: #F8FAFC;
+            padding: 12px 16px;
+            border-radius: 16px;
+            border: 2px dashed #CBD5E1;
+        }
+
+        /* ==========================================
+           CANVAS ARCADE GAMIFICATION STYLES
+           ========================================== */
+        .arcade-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .canvas-frame {
+            width: 100%;
+            max-width: 820px;
+            height: clamp(280px, 46vh, 420px);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 4px solid #1E293B;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            position: relative;
+            background: #0F172A;
+        }
+
+        .canvas-frame canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+
+        .arcade-controls-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .dpad-btn {
+            background: linear-gradient(180deg, #4F46E5 0%, #3730A3 100%);
+            color: white;
+            border: 2px solid #818CF8;
+            border-radius: 14px;
+            padding: 10px 18px;
+            font-weight: 800;
+            font-size: 1rem;
+            box-shadow: 0 4px 0 #1E1B4B;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dpad-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #1E1B4B;
+        }
+
+        .dpad-btn.fire {
+            background: linear-gradient(180deg, #EF4444 0%, #B91C1C 100%);
+            border-color: #FCA5A5;
+            box-shadow: 0 4px 0 #7F1D1D;
+        }
+
+        .arcade-hint {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #475569;
+            background: #EEF2FF;
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        /* OPTIONS GRID (Sandaran Aneka Pilihan) */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .header-bar { padding: 10px 14px; }
+            .game-board { padding: 14px; min-height: auto; }
+            .instruction-box { font-size: 1rem; padding: 10px 12px; }
+            .menu-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+            .phase-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+            .dpad-btn { padding: 12px 16px; font-size: 0.95rem; }
+        }
+
+        @media (max-width: 600px) {
+            .options-grid { grid-template-columns: 1fr; }
+            .canvas-frame { height: clamp(260px, 44vh, 330px); border-width: 3px; }
+            .auth-card { padding: 24px 16px; }
+            .auth-card h1 { font-size: 1.75rem; }
+            .welcome-hero h1 { font-size: 1.55rem; }
+            .admin-tabs { gap: 6px; }
+            .admin-tab-btn { padding: 8px 12px; font-size: 0.8rem; }
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #E2E8F0;
+            border-bottom: 5px solid #CBD5E1;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.15s ease;
+        }
+
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #F8FAFC;
+            transform: translateY(-2px);
+        }
+
+        .option-btn .opt-index {
+            background: #E2E8F0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Fredoka One', cursive;
+            flex-shrink: 0;
+            color: var(--primary);
+        }
+
+        .feedback-banner {
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-radius: 14px;
+            text-align: center;
+            font-weight: 800;
+            display: none;
+        }
+
+        .feedback-banner.correct {
+            background: #D1FAE5;
+            color: #065F46;
+            border: 2px solid #10B981;
+            display: block;
+        }
+
+        .feedback-banner.wrong {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 2px solid #EF4444;
+            display: block;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background: #E2E8F0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-green);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .btn-action {
+            background: var(--accent-green);
+            color: white;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.15rem;
+            padding: 12px 28px;
+            border-radius: 40px;
+            border: none;
+            box-shadow: 0 6px 0 #047857;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.15s;
+        }
+
+        .btn-action:active {
+            transform: translateY(3px);
+            box-shadow: 0 3px 0 #047857;
+        }
+
+        /* Result Screen */
+        .result-card {
+            text-align: center;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            padding: 30px 10px;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: white;
+            color: var(--primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 6px solid var(--accent-yellow);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .score-circle .number {
+            font-family: 'Fredoka One', cursive;
+            font-size: 3rem;
+            line-height: 1;
+        }
+
+        /* ==========================================
+           ADMIN PANEL & LIVE LEADERBOARD (KAHOOT STYLE)
+           ========================================== */
+        .admin-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            border-bottom: 2px solid #E2E8F0;
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .admin-tab-btn {
+            background: #F1F5F9;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 800;
+            color: #475569;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .admin-tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .admin-tab-btn.live-tab.active {
+            background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
+            color: white;
+        }
+
+        .admin-section {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .admin-section.active {
+            display: flex;
+        }
+
+        /* Live Leaderboard Kahoot/Quizizz Projection */
+        .live-arena-board {
+            background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%);
+            border-radius: 20px;
+            padding: 20px;
+            color: white;
+            border: 3px solid #6366F1;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+        }
+
+        .live-arena-board.projector-fullscreen {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            border-radius: 0;
+            border: none;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .live-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            padding-bottom: 12px;
+        }
+
+        .live-pulse-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #10B981;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulseLive 1.5s infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes pulseLive {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .leaderboard-row {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 10px;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .leaderboard-row.rank-1 {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.35) 0%, rgba(255, 255, 255, 0.12) 100%);
+            border-color: #FBBF24;
+        }
+
+        .leaderboard-row.rank-2 {
+            background: linear-gradient(90deg, rgba(148, 163, 184, 0.35) 0%, rgba(255, 255, 255, 0.12) 100%);
+            border-color: #CBD5E1;
+        }
+
+        .leaderboard-row.rank-3 {
+            background: linear-gradient(90deg, rgba(217, 119, 6, 0.35) 0%, rgba(255, 255, 255, 0.12) 100%);
+            border-color: #D97706;
+        }
+
+        .rank-medal {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        .rank-1 .rank-medal { background: #F59E0B; color: #1E293B; }
+        .rank-2 .rank-medal { background: #E2E8F0; color: #1E293B; }
+        .rank-3 .rank-medal { background: #B45309; color: white; }
+
+        .lb-progress-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .lb-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #38BDF8, #10B981);
+            border-radius: 10px;
+            transition: width 0.4s ease;
+        }
+
+        .admin-form-card {
+            background: #F8FAFC;
+            border: 2px solid #E2E8F0;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .admin-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .admin-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .admin-field label {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #475569;
+        }
+
+        .admin-field input, .admin-field select, .admin-field textarea {
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 2px solid #CBD5E1;
+            font-size: 0.95rem;
+            font-weight: 600;
+            outline: none;
+            background: white;
+        }
+
+        .admin-list-container {
+            max-height: 280px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 4px;
+        }
+
+        .admin-item-card {
+            background: white;
+            border: 2px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-item-info {
+            flex: 1;
+        }
+
+        .admin-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: #EEF2FF;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-sm {
+            border: none;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-edit { background: #FEF3C7; color: #D97706; }
+        .btn-delete { background: #FEE2E2; color: #DC2626; }
+        .btn-primary-sm { background: var(--primary); color: white; padding: 10px 18px; font-size: 0.9rem; }
+        .btn-danger-sm { background: var(--accent-red); color: white; padding: 8px 14px; font-size: 0.85rem; }
+        .btn-success-sm { background: var(--accent-green); color: white; padding: 10px 18px; font-size: 0.9rem; }
+
+        /* Custom Modal Notification */
+        .toast-msg {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1E293B;
+            color: white;
+            padding: 14px 22px;
+            border-radius: 16px;
+            font-weight: 800;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            border-left: 5px solid var(--accent-green);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast-notification" class="toast-msg">
+        <i class="fa-solid fa-circle-check" style="color: var(--accent-green);"></i>
+        <span id="toast-text">Perubahan berjaya disimpan!</span>
+    </div>
+
+    <div id="app-container">
+        <!-- Header Bar -->
+        <div id="main-header" class="header-bar" style="display: none;">
+            <div class="user-profile-badge">
+                <div class="avatar-circle" id="user-avatar-display"><i class="fa-solid fa-user-astronaut"></i></div>
+                <div>
+                    <div id="user-name-display" style="color: var(--primary); font-size: 1.1rem;">Murid BM</div>
+                    <div id="user-class-display" style="font-size: 0.75rem; color: #64748B;">Tahun 6 • KPM 2026</div>
+                </div>
+            </div>
+            <div class="stats-group">
+                <div class="stat-badge score">
+                    <i class="fa-solid fa-star"></i>
+                    <span id="score-val">0</span>
+                </div>
+                <div class="stat-badge streak">
+                    <i class="fa-solid fa-fire"></i>
+                    <span id="streak-val">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 0. SKRIN PENDAFTARAN (MULTI-USER KAHOOT/QUIZIZZ STYLE) -->
+        <div id="screen-auth" class="screen active">
+            <div class="auth-card">
+                <div id="firebase-status-badge" class="cloud-status-pill">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Menyambung ke Firebase...
+                </div>
+                <br>
+                <i class="fa-solid fa-gamepad" style="font-size: 3.3rem; color: var(--primary); margin-bottom: 8px;"></i>
+                <h1>Kembara BM Tahun 6</h1>
+                <p style="color: #64748B; font-weight: 700; margin-bottom: 14px;">Piawaian KPM 2026 • Arena Permainan Interaktif</p>
+                
+                <div class="input-group">
+                    <input type="text" id="player-name-input" placeholder="Masukkan Nama Penuh / Panggilan..." maxlength="18">
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="player-class-input" placeholder="Kelas (Contoh: 6 Bestari)" maxlength="15">
+                </div>
+
+                <div style="font-weight: 800; color: #475569; font-size: 0.9rem;">Pilih Avatar Wira Bahasa:</div>
+                <div class="avatar-selector" id="avatar-selector-group">
+                    <div class="avatar-option selected" data-icon="fa-user-astronaut"><i class="fa-solid fa-user-astronaut"></i></div>
+                    <div class="avatar-option" data-icon="fa-user-ninja"><i class="fa-solid fa-user-ninja"></i></div>
+                    <div class="avatar-option" data-icon="fa-robot"><i class="fa-solid fa-robot"></i></div>
+                    <div class="avatar-option" data-icon="fa-dragon"><i class="fa-solid fa-dragon"></i></div>
+                    <div class="avatar-option" data-icon="fa-cat"><i class="fa-solid fa-cat"></i></div>
+                </div>
+
+                <button type="button" id="btn-start-journey" class="btn-action" style="width: 100%; justify-content: center; margin-bottom: 12px;">
+                    Sertai Kembara <i class="fa-solid fa-rocket"></i>
+                </button>
+
+                <button type="button" id="btn-open-admin" class="btn-back" style="width: 100%; justify-content: center; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-tv"></i> Panel Guru & Pancaran Live (Admin)
+                </button>
+            </div>
+        </div>
+
+        <!-- 0B. SKRIN LOG MASUK ADMIN -->
+        <div id="screen-admin-login" class="screen">
+            <div class="auth-card">
+                <i class="fa-solid fa-shield-halved" style="font-size: 3.5rem; color: var(--primary); margin-bottom: 10px;"></i>
+                <h1 style="font-size: 1.9rem;">Log Masuk Admin</h1>
+                <p style="color: #64748B; font-weight: 700; margin-bottom: 18px;">Akses terhad kepada Pentadbir Sahaja</p>
+                
+                <div class="input-group">
+                    <input type="text" id="admin-login-username" placeholder="Nama Pengguna (Username)" autocomplete="off">
+                </div>
+
+                <div class="input-group">
+                    <input type="password" id="admin-login-password" placeholder="Kata Laluan (Password)">
+                </div>
+
+                <button type="button" id="btn-verify-admin" class="btn-action" style="width: 100%; justify-content: center; margin-bottom: 12px; background: var(--primary); box-shadow: 0 6px 0 var(--primary-hover);">
+                    <i class="fa-solid fa-right-to-bracket"></i> Log Masuk Panel
+                </button>
+
+                <button type="button" id="btn-exit-admin-login" class="btn-back" style="width: 100%; justify-content: center; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-arrow-left"></i> Kembali
+                </button>
+            </div>
+        </div>
+
+        <!-- 1. SKRIN MENU MODUL (8 KONSEP PERMAINAN) -->
+        <div id="screen-menu" class="screen">
+            <div class="welcome-hero">
+                <h1>Pilih Arena Pembelajaran Tahun 6</h1>
+                <p>Setiap modul menampilkan gaya permainan arked yang berbeza!</p>
+            </div>
+
+            <div id="dynamic-menu-grid" class="menu-grid"></div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" id="btn-back-login" class="btn-back" style="background: rgba(255, 255, 255, 0.92); color: var(--primary); padding: 10px 18px; border-radius: 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Tukar Profil Murid
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. SKRIN PILIHAN FASA -->
+        <div id="screen-phases" class="screen">
+            <div class="game-board">
+                <div>
+                    <div class="game-header">
+                        <button type="button" id="btn-phases-to-menu" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Modul</button>
+                        <span id="module-title-tag" style="font-family:'Fredoka One'; color:var(--primary);">Pilihan Fasa</span>
+                    </div>
+                    <div style="text-align:center; margin-bottom:10px;">
+                        <h2 id="module-game-subtitle" style="font-family:'Fredoka One'; color:var(--primary);">Pilih Fasa Pembelajaran</h2>
+                        <p style="font-size:0.9rem; color:#64748B;">Dapatkan minimum 70% markah untuk menyahkunci fasa seterusnya!</p>
+                    </div>
+                </div>
+
+                <div id="phase-container" class="phase-grid"></div>
+            </div>
+        </div>
+
+        <!-- 3. SKRIN PERMAINAN GAMIFIED (CANVAS ARCADE) -->
+        <div id="screen-game" class="screen">
+            <div class="game-board">
+                <div>
+                    <div class="game-header">
+                        <button type="button" id="btn-game-to-phases" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Fasa</button>
+                        <span id="game-mode-badge" style="font-family:'Fredoka One'; background:#1E293B; color:#FDE047; padding:5px 14px; border-radius:12px; font-size:0.9rem;">Mod Permainan</span>
+                        <span id="game-phase-tag" style="font-family:'Fredoka One'; background:#EEF2FF; color:var(--primary); padding:4px 12px; border-radius:10px;">Fasa 1</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="progress-fill" class="progress-bar-fill"></div>
+                    </div>
+                </div>
+
+                <div id="instruction-text" class="instruction-box">Soalan...</div>
+
+                <div id="game-interactive-area" style="flex:1; display:flex; flex-direction:column; justify-content:center;"></div>
+
+                <div id="feedback-banner" class="feedback-banner"></div>
+            </div>
+        </div>
+
+        <!-- 4. SKRIN KEPUTUSAN FASA -->
+        <div id="screen-result" class="screen">
+            <div class="result-card">
+                <h2 id="result-title" style="font-family:'Fredoka One'; color:#FDE047; font-size:2.4rem;">Fasa Selesai! 🎉</h2>
+                <div class="score-circle">
+                    <span id="final-score" class="number">0%</span>
+                    <span style="font-size:0.75rem; font-weight:800; color:#64748B; margin-top: 4px;">MARKAH FASA</span>
+                </div>
+                <p id="result-message" style="font-weight:700; font-size:1.1rem; max-width:500px; text-align:center; color:#FDE047;"></p>
+
+                <button type="button" id="btn-result-next" class="btn-action">
+                    <i class="fa-solid fa-list-check"></i> Seterusnya / Pilih Fasa
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. SKRIN ADMIN PANEL + PANCARAN LANGSUNG -->
+        <div id="screen-admin" class="screen">
+            <div class="game-board" style="justify-content: flex-start; gap: 12px;">
+                <div class="game-header">
+                    <button type="button" id="btn-admin-back" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+                    <span style="font-family:'Fredoka One'; color:var(--primary); font-size: 1.15rem;">
+                        <i class="fa-solid fa-sliders"></i> Panel Guru (<span id="active-admin-badge">Admin</span>)
+                    </span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button type="button" id="btn-reset-db" class="btn-sm btn-danger-sm"><i class="fa-solid fa-rotate-left"></i> Reset Asal</button>
+                        <button type="button" id="btn-logout-admin" class="btn-sm" style="background:#334155; color:white; padding:8px 12px;"><i class="fa-solid fa-right-from-bracket"></i> Log Keluar</button>
+                    </div>
+                </div>
+
+                <!-- Tab Navigasi Admin -->
+                <div class="admin-tabs">
+                    <button type="button" class="admin-tab-btn live-tab active" data-tab="live"><i class="fa-solid fa-tower-broadcast"></i> Pancaran Live (Kahoot/Quizizz)</button>
+                    <button type="button" class="admin-tab-btn" data-tab="questions"><i class="fa-solid fa-circle-question"></i> Urus Soalan</button>
+                    <button type="button" class="admin-tab-btn" data-tab="phases"><i class="fa-solid fa-layer-group"></i> Urus Fasa</button>
+                    <button type="button" class="admin-tab-btn" data-tab="modules"><i class="fa-solid fa-cubes"></i> Urus Modul</button>
+                </div>
+
+                <!-- TAB 0: PANCARAN LIVE MURID (REAL-TIME LEADERBOARD) -->
+                <div id="admin-tab-live" class="admin-section active">
+                    <div id="live-projector-container" class="live-arena-board">
+                        <div class="live-header-row">
+                            <div>
+                                <div style="font-size: 0.8rem; font-weight: 800; color: #34D399; text-transform: uppercase; letter-spacing: 1px;">
+                                    <span class="live-pulse-dot"></span> SIARAN LANGSUNG BILIK DARJAH (KPM 2026)
+                                </div>
+                                <h2 style="font-family: 'Fredoka One'; font-size: 1.65rem; color: #FDE047;">
+                                    Papan Pendahulu Kembara BM Tahun 6
+                                </h2>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <span style="background: rgba(255,255,255,0.15); padding: 8px 14px; border-radius: 12px; font-weight: 800; font-size: 0.9rem;">
+                                    <i class="fa-solid fa-users"></i> Peserta Aktif: <span id="live-player-count">0</span>
+                                </span>
+                                <button type="button" id="btn-toggle-projector" class="btn-sm" style="background: #F59E0B; color: #1E293B; padding: 8px 14px;">
+                                    <i class="fa-solid fa-expand"></i> Mod Projektor
+                                </button>
+                                <button type="button" id="btn-clear-live" class="btn-sm btn-danger-sm">
+                                    <i class="fa-solid fa-broom"></i> Kosongkan Sesi
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="live-leaderboard-list"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 1: URUS SOALAN -->
+                <div id="admin-tab-questions" class="admin-section">
+                    <div class="admin-row">
+                        <div class="admin-field">
+                            <label>Pilih Modul:</label>
+                            <select id="admin-q-module"></select>
+                        </div>
+                        <div class="admin-field">
+                            <label>Pilih Fasa:</label>
+                            <select id="admin-q-phase"></select>
+                        </div>
+                    </div>
+
+                    <div class="admin-form-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong id="admin-q-form-title" style="color:var(--primary);">+ Tambah Soalan Baharu</strong>
+                            <button type="button" id="admin-q-cancel-btn" class="btn-sm btn-back" style="display:none;">Batal Edit</button>
+                        </div>
+                        
+                        <input type="hidden" id="admin-q-edit-index" value="-1">
+
+                        <div class="admin-row">
+                            <div class="admin-field">
+                                <label>Teks Soalan / Arahan (Tahun 6 KPM 2026):</label>
+                                <input type="text" id="admin-q-text" placeholder="Contoh: Pilih kata majmuk mantap yang dieja dengan betul:">
+                            </div>
+                        </div>
+
+                        <div class="admin-row">
+                            <div class="admin-field">
+                                <label>Jawapan Betul:</label>
+                                <input type="text" id="mcq-correct" placeholder="Pilihan jawapan tepat">
+                            </div>
+                            <div class="admin-field">
+                                <label>Pilihan Salah 1:</label>
+                                <input type="text" id="mcq-wrong1" placeholder="Pilihan salah 1">
+                            </div>
+                            <div class="admin-field">
+                                <label>Pilihan Salah 2:</label>
+                                <input type="text" id="mcq-wrong2" placeholder="Pilihan salah 2">
+                            </div>
+                            <div class="admin-field">
+                                <label>Pilihan Salah 3:</label>
+                                <input type="text" id="mcq-wrong3" placeholder="Pilihan salah 3">
+                            </div>
+                        </div>
+
+                        <div style="text-align: right;">
+                            <button type="button" id="btn-save-question" class="btn-sm btn-success-sm">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Simpan Soalan ke Firebase
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="font-weight: 800; color: #475569; font-size: 0.95rem;">
+                        Senarai Soalan Dalam Fasa Ini (<span id="admin-q-count">0</span> soalan):
+                    </div>
+                    <div id="admin-q-list" class="admin-list-container"></div>
+                </div>
+
+                <!-- TAB 2: URUS FASA -->
+                <div id="admin-tab-phases" class="admin-section">
+                    <div class="admin-form-card">
+                        <strong style="color:var(--primary);">Tambah Fasa Baharu Ke Dalam Modul</strong>
+                        <div class="admin-row" style="align-items: flex-end;">
+                            <div class="admin-field">
+                                <label>Pilih Modul:</label>
+                                <select id="admin-p-module"></select>
+                            </div>
+                            <div>
+                                <button type="button" id="btn-add-phase" class="btn-sm btn-primary-sm">
+                                    <i class="fa-solid fa-plus"></i> Tambah Fasa Seterusnya
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="font-weight: 800; color: #475569; font-size: 0.95rem;">Senarai Fasa Dalam Modul:</div>
+                    <div id="admin-p-list" class="admin-list-container"></div>
+                </div>
+
+                <!-- TAB 3: URUS MODUL (8 KONSEP PERMAINAN TERMASUK 4 KONSEP BAHARU) -->
+                <div id="admin-tab-modules" class="admin-section">
+                    <div class="admin-form-card">
+                        <strong style="color:var(--primary);">+ Tambah Jenis Modul Baharu</strong>
+                        <div class="admin-row">
+                            <div class="admin-field">
+                                <label>Nama Modul:</label>
+                                <input type="text" id="new-mod-title" placeholder="Contoh: Seni Bahasa">
+                            </div>
+                            <div class="admin-field">
+                                <label>Konsep Permainan:</label>
+                                <select id="new-mod-gametype">
+                                    <option value="pacman">1. Konsep Pac-Man (Makan Jawapan)</option>
+                                    <option value="angrybird">2. Konsep Angry Bird (Lastik Sasaran)</option>
+                                    <option value="flappybird">3. Konsep Flappy Bird (Terowong Terbang)</option>
+                                    <option value="spacebattle">4. Konsep Space Battle (Tembak UFO)</option>
+                                    <option value="monsterbattle">5. Quiz Monster Battle (Serang Raksasa)</option>
+                                    <option value="speedrunner">6. Quiz Speed Runner (Larian Lorong Laju)</option>
+                                    <option value="tetris">7. Quiz Tetris (Susun Blok Jawapan)</option>
+                                    <option value="superjumper">8. Quiz Super Jumper (Lompat Platform)</option>
+                                </select>
+                            </div>
+                            <div class="admin-field">
+                                <label>Penerangan Ringkas:</label>
+                                <input type="text" id="new-mod-desc" placeholder="Contoh: Sajak & Syair Tahun 6">
+                            </div>
+                            <div class="admin-field">
+                                <label>Warna Kad:</label>
+                                <select id="new-mod-color">
+                                    <option value="c-1">Kuning Emas</option>
+                                    <option value="c-2">Merah Garang</option>
+                                    <option value="c-3">Biru Cyan</option>
+                                    <option value="c-4">Ungu Angkasa</option>
+                                    <option value="c-5">Hijau Zamrud</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <button type="button" id="btn-add-module" class="btn-sm btn-success-sm">
+                                <i class="fa-solid fa-plus-circle"></i> Cipta Modul Baharu
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="font-weight: 800; color: #475569; font-size: 0.95rem;">Senarai Modul Aktif:</div>
+                    <div id="admin-m-list" class="admin-list-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================
+           0. KONFIGURASI FIREBASE FIRESTORE ANDA
+           ========================================== */
+        const firebaseConfig = {
+            apiKey: "AIzaSyCiJM8Gj2eO2lc2varjwtomQsHT_nAqYRo",
+            authDomain: "kembara-bm-tahun-6.firebaseapp.com",
+            projectId: "kembara-bm-tahun-6",
+            storageBucket: "kembara-bm-tahun-6.firebasestorage.app",
+            messagingSenderId: "415812302203",
+            appId: "1:415812302203:web:5458fcfd2cbb93360839de",
+            measurementId: "G-6Z4NLQBLQR"
+        };
+
+        let db = null;
+        let isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
+
+        if (isFirebaseConfigured && typeof firebase !== 'undefined') {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+            } catch (err) {
+                console.error("Ralat permulaan Firebase:", err);
+                isFirebaseConfigured = false;
+            }
+        }
+
+        function updateCloudStatusUI(state, text) {
+            const badge = document.getElementById('firebase-status-badge');
+            if (!badge) return;
+            badge.className = 'cloud-status-pill ' + state;
+            if (state === 'connected') {
+                badge.innerHTML = '<i class="fa-solid fa-cloud-check"></i> ' + text;
+            } else if (state === 'offline') {
+                badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + text;
+            } else {
+                badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + text;
+            }
+        }
+
+        /* ==========================================
+           1. KURIKULUM BAHASA MELAYU TAHUN 6 (KPM 2026)
+           ========================================== */
+        const defaultGameData = {
+            modules: [
+                {
+                    id: 'tatabahasa_t6',
+                    title: '1. Tatabahasa & Ejaan',
+                    gameType: 'pacman',
+                    gameLabel: 'Konsep Pac-Man',
+                    description: 'Kata Majmuk Mantap & Kata Tugas (Tahun 6)',
+                    icon: 'fa-ghost',
+                    colorClass: 'c-1',
+                    phases: [
+                        [
+                            { question: "Pilih Kata Majmuk Mantap yang dieja rapat dengan betul:", options: [{ text: "Tanggungjawab", correct: true }, { text: "Tanggung jawab", correct: false }, { text: "Aturcara", correct: false }, { text: "Bandaraya", correct: false }] },
+                            { question: "Antara berikut, yang manakah ejaan Kata Majmuk Mantap yang tepat?", options: [{ text: "Antarabangsa", correct: true }, { text: "Antara bangsa", correct: false }, { text: "Ulangkaji", correct: false }, { text: "Gambarajah", correct: false }] },
+                            { question: "Pilih Kata Bantu Aspek yang sesuai: 'Murid-murid Tahun 6 ___ menyiapkan projek digital itu.'", options: [{ text: "telah", correct: true }, { text: "hendak", correct: false }, { text: "mesti", correct: false }, { text: "harus", correct: false }] },
+                            { question: "Pilih Kata Pemeri yang tepat: 'Kejayaan cemerlang itu ___ hasil usaha gigihnya.'", options: [{ text: "adalah", correct: true }, { text: "ialah", correct: false }, { text: "bukan", correct: false }, { text: "tidak", correct: false }] },
+                            { question: "Pilih Kata Pemeri yang betul: 'Pengerusi Kelab Robotik Tahun 6 ___ saudara Amirul.'", options: [{ text: "ialah", correct: true }, { text: "adalah", correct: false }, { text: "sangat", correct: false }, { text: "amat", correct: false }] },
+                            { question: "Manakah antara berikut merupakan Kata Majmuk Mantap?", options: [{ text: "Suruhanjaya", correct: true }, { text: "Suruhan jaya", correct: false }, { text: "Kemaskini", correct: false }, { text: "Latarbelakang", correct: false }] },
+                            { question: "Pilih Kata Penguat Bebas yang boleh hadir di hadapan atau belakang kata adjektif:", options: [{ text: "sangat", correct: true }, { text: "terlalu", correct: false }, { text: "paling", correct: false }, { text: "sekali", correct: false }] },
+                            { question: "Pilih ejaan kata pinjaman yang menepati piawaian DBP 2026:", options: [{ text: "Kreativiti", correct: true }, { text: "Kreatifiti", correct: false }, { text: "Ko-kurikulum", correct: false }, { text: "E-mel", correct: false }] },
+                            { question: "Pilih Kata Hubung Pancangan Keterangan yang tepat: 'Dia tetap hadir ___ hujan lebat.'", options: [{ text: "walaupun", correct: true }, { text: "kerana", correct: false }, { text: "supaya", correct: false }, { text: "hingga", correct: false }] },
+                            { question: "Pilih Kata Nafi yang tepat: 'Kenyataan yang disebarkan itu ___ benar sama sekali.'", options: [{ text: "tidak", correct: true }, { text: "bukan", correct: false }, { text: "tiada", correct: false }, { text: "jangan", correct: false }] }
+                        ],
+                        [
+                            { question: "Pilih Kata Ganti Nama Tak Tentu yang tepat: '___ yang melanggar peraturan akan didenda.'", options: [{ text: "Sesiapa", correct: true }, { text: "Apa-apa", correct: false }, { text: "Mana-mana", correct: false }, { text: "Bila-bila", correct: false }] },
+                            { question: "Pilih Kata Sendi Nama yang betul: 'Surat penghargaan itu ditujukan ___ Guru Besar.'", options: [{ text: "kepada", correct: true }, { text: "pada", correct: false }, { text: "di", correct: false }, { text: "ke", correct: false }] },
+                            { question: "Pilih penjodoh bilangan bagi 'se___ surat khabar dan se___ meriam':", options: [{ text: "naskhah / laras", correct: true }, { text: "helai / pucuk", correct: false }, { text: "keping / batang", correct: false }, { text: "buah / biji", correct: false }] },
+                            { question: "Pilih Kata Bilangan Tak Tentu yang sesuai: '___ peserta telah berkumpul di dewan.'", options: [{ text: "Para", correct: true }, { text: "Para-para", correct: false }, { text: "Segala-gala", correct: false }, { text: "Semua-semua", correct: false }] },
+                            { question: "Pilih kata adjektif perasaan yang paling tepat bagi menggambarkan kejayaan:", options: [{ text: "Bangga", correct: true }, { text: "Gopoh", correct: false }, { text: "Cermat", correct: false }, { text: "Nyaring", correct: false }] },
+                            { question: "Pilih ejaan kata majmuk bentuk mantap yang tepat:", options: [{ text: "Warganegara", correct: true }, { text: "Warga negara", correct: false }, { text: "Tengahari", correct: false }, { text: "Sari kata", correct: false }] },
+                            { question: "Pilih Kata Penegas yang sesuai: 'Siapa___ yang akan mewakili sekolah dalam pidato?'", options: [{ text: "kah", correct: true }, { text: "tah", correct: false }, { text: "lah", correct: false }, { text: "pun", correct: false }] },
+                            { question: "Pilih Kata Arah yang tepat: 'Pelancong itu berdiri di ___ tebing sungai.'", options: [{ text: "pinggir", correct: true }, { text: "antara", correct: false }, { text: "sudut", correct: false }, { text: "pangkal", correct: false }] }
+                        ],
+                        ...Array.from({ length: 3 }, function(_, i) {
+                            return [
+                                { question: "[Fasa " + (i + 3) + "] Pilih ejaan Kata Majmuk Mantap yang betul:", options: [{ text: "Pesuruhjaya", correct: true }, { text: "Pesuruh jaya", correct: false }, { text: "Reaksi-balas", correct: false }, { text: "Daya-saing", correct: false }] },
+                                { question: "[Fasa " + (i + 3) + "] Pilih Kata Sendi Nama yang betul bagi masa: '___ abad ke-21 ini...'", options: [{ text: "Pada", correct: true }, { text: "Di", correct: false }, { text: "Kepada", correct: false }, { text: "Dari", correct: false }] },
+                                { question: "[Fasa " + (i + 3) + "] Pilih kata tugas yang tepat: 'Kita perlu berjimat cermat ___ masa depan.'", options: [{ text: "demi", correct: true }, { text: "tentang", correct: false }, { text: "sejak", correct: false }, { text: "terhadap", correct: false }] },
+                                { question: "[Fasa " + (i + 3) + "] Manakah kata majmuk kiasan?", options: [{ text: "Kaki bangku", correct: true }, { text: "Meja tulis", correct: false }, { text: "Jam tangan", correct: false }, { text: "Guru besar", correct: false }] },
+                                { question: "[Fasa " + (i + 3) + "] Pilih ejaan yang betul mengikut Pedoman Umum Ejaan Rumi:", options: [{ text: "Profesional", correct: true }, { text: "Pofesional", correct: false }, { text: "Profesyenal", correct: false }, { text: "Profesyonal", correct: false }] }
+                            ];
+                        })
+                    ]
+                },
+                {
+                    id: 'peribahasa_t6',
+                    title: '2. Peribahasa & Kiasan',
+                    gameType: 'angrybird',
+                    gameLabel: 'Konsep Angry Bird',
+                    description: 'Perumpamaan, Bidalan & Pepatah (Tahun 6)',
+                    icon: 'fa-dove',
+                    colorClass: 'c-2',
+                    phases: [
+                        [
+                            { question: "Apakah maksud peribahasa 'Bagai mencurah air ke daun keladi'?", options: [{ text: "Nasihat yang sia-sia / tidak diendahkan", correct: true }, { text: "Bekerja keras tanpa mengira penat", correct: false }, { text: "Menolong orang dalam kesusahan", correct: false }, { text: "Keadaan yang sangat sunyi", correct: false }] },
+                            { question: "Pilih peribahasa yang bermaksud 'melakukan dua pekerjaan dalam satu masa':", options: [{ text: "Sambil menyelam minum air", correct: true }, { text: "Bagai aur dengan tebing", correct: false }, { text: "Ukur baju di badan sendiri", correct: false }, { text: "Biar lambat asalkan selamat", correct: false }] },
+                            { question: "Apakah maksud bidalan 'Indah khabar daripada rupa'?", options: [{ text: "Khabar yang lebih hebat daripada keadaan sebenar", correct: true }, { text: "Pemandangan yang sangat cantik", correct: false }, { text: "Berita gembira yang dinantikan", correct: false }, { text: "Wajah yang menawan hati", correct: false }] },
+                            { question: "Apakah maksud pepatah 'Di mana bumi dipijak, di situ langit dijunjung'?", options: [{ text: "Mematuhi adat dan peraturan tempat kita tinggal", correct: true }, { text: "Sentiasa merantau ke negeri orang", correct: false }, { text: "Menjaga kebersihan alam sekitar", correct: false }, { text: "Bercita-cita tinggi menggapai bintang", correct: false }] },
+                            { question: "Apakah maksud perumpamaan 'Seperti enau dalam belukar, melepaskan pucuk masing-masing'?", options: [{ text: "Mementingkan diri sendiri tanpa bermuafakat", correct: true }, { text: "Hidup bersatu padu dalam masyarakat", correct: false }, { text: "Bersaing secara sihat dalam pelajaran", correct: false }, { text: "Tumbuhan yang hidup subur di hutan", correct: false }] },
+                            { question: "Pilih peribahasa yang sesuai apabila seseorang menyesal selepas melakukan kesilapan:", options: [{ text: "Sesal dahulu pendapatan, sesal kemudian tidak berguna", correct: true }, { text: "Alang-alang mandi biar basah", correct: false }, { text: "Belakang parang diasah lagikan tajam", correct: false }, { text: "Carik-carik bulu ayam lama-lama bercantum juga", correct: false }] },
+                            { question: "Apakah maksud peribahasa 'Kais pagi makan pagi, kais petang makan petang'?", options: [{ text: "Hidup yang sangat miskin dan serba kekurangan", correct: true }, { text: "Rajin bekerja dari pagi hingga petang", correct: false }, { text: "Suka makan pada waktu tertentu sahaja", correct: false }, { text: "Berjimat cermat menyimpan wang", correct: false }] },
+                            { question: "Apakah maksud peribahasa 'Genggam bara api biar sampai jadi arang'?", options: [{ text: "Melakukan sesuatu pekerjaan hingga berjaya sepenuhnya", correct: true }, { text: "Bermain dengan benda yang berbahaya", correct: false }, { text: "Cepat berputus asa apabila gagal", correct: false }, { text: "Membuat unggun api di dalam hutan", correct: false }] }
+                        ],
+                        ...Array.from({ length: 4 }, function(_, i) {
+                            return [
+                                { question: "[Fasa " + (i + 2) + "] Apakah maksud 'Ukur baju di badan sendiri'?", options: [{ text: "Berbelanja mengikut kemampuan diri", correct: true }, { text: "Menjahit pakaian untuk diri sendiri", correct: false }, { text: "Membandingkan diri dengan orang lain", correct: false }, { text: "Membeli pakaian yang mahal", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Maksud 'Bagai kaca terhempas ke batu':", options: [{ text: "Hati yang sangat sedih dan kecewa", correct: true }, { text: "Bunyi yang sangat bising", correct: false }, { text: "Barang yang mudah pecah", correct: false }, { text: "Kemalangan di jalan raya", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Maksud 'Bulat air kerana pembetung, bulat manusia kerana muafakat':", options: [{ text: "Kata sepakat dicapai melalui perbincangan", correct: true }, { text: "Air mengalir melalui paip besi", correct: false }, { text: "Bekerja seorang diri lebih pantas", correct: false }, { text: "Membina saliran air di kampung", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Maksud 'Kalau tidak dipecahkan ruyung, manakan dapat sagunya':", options: [{ text: "Cita-cita tidak tercapai tanpa usaha gigih", correct: true }, { text: "Menebang pokok rumbia di hutan", correct: false }, { text: "Makan makanan tradisional", correct: false }, { text: "Menunggu rezeki datang bergolek", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Maksud 'Melentur buluh biarlah dari rebungnya':", options: [{ text: "Mendidik anak-anak sejak kecil lagi", correct: true }, { text: "Membuat kraftangan daripada buluh", correct: false }, { text: "Menanam buluh di tepi sungai", correct: false }, { text: "Menebas semak samun", correct: false }] }
+                            ];
+                        })
+                    ]
+                },
+                {
+                    id: 'imbuhan_t6',
+                    title: '3. Imbuhan & Morfologi',
+                    gameType: 'flappybird',
+                    gameLabel: 'Konsep Flappy Bird',
+                    description: 'Imbuhan Apitan, Sisipan & Kata Ganda (Tahun 6)',
+                    icon: 'fa-feather-pointed',
+                    colorClass: 'c-3',
+                    phases: [
+                        [
+                            { question: "Pilih imbuhan apitan yang tepat: 'Kerajaan giat ___ (bangun) teknologi hijau negara.'", options: [{ text: "membangunkan", correct: true }, { text: "pembangunan", correct: false }, { text: "dibangunkan", correct: false }, { text: "terbangun", correct: false }] },
+                            { question: "Pilih kata berimbuhan sisipan yang betul bagi kata dasar 'guruh':", options: [{ text: "gemuruh", correct: true }, { text: "geruh", correct: false }, { text: "mengguruh", correct: false }, { text: "guruh-gemuruh", correct: false }] },
+                            { question: "Pilih Kata Ganda Berentak yang sesuai: 'Suasana di pasar malam itu sangat ___.'", options: [{ text: "hingar-bingar", correct: true }, { text: "gilang-gemilang", correct: false }, { text: "kusut-masai", correct: false }, { text: "lekak-lekuk", correct: false }] },
+                            { question: "Pilih imbuhan apitan kata kerja transitif: 'Pak Cik Mail ___ (hadiah) seutas jam tangan kepada anaknya.'", options: [{ text: "menghadiahkan", correct: true }, { text: "menghadiahi", correct: false }, { text: "berhadiahkan", correct: false }, { text: "dihadiahi", correct: false }] },
+                            { question: "Pilih imbuhan yang tepat: 'Sultan telah ___ (anugerah) pingat kebesaran kepada tokoh itu.'", options: [{ text: "menganugerahi", correct: true }, { text: "menganugerahkan", correct: false }, { text: "dianugerahkan", correct: false }, { text: "beranugerah", correct: false }] },
+                            { question: "Manakah perkataan berikut mengandungi imbuhan sisipan '-el-'?", options: [{ text: "Telunjuk", correct: true }, { text: "Terlalu", correct: false }, { text: "Pelajar", correct: false }, { text: "Seluruh", correct: false }] },
+                            { question: "Pilih Kata Ganda Separa yang betul bagi 'pepohon':", options: [{ text: "pepohon (banyak pohon)", correct: true }, { text: "pohon-pepohon", correct: false }, { text: "pe-pohon", correct: false }, { text: "pepohon-pepohon", correct: false }] },
+                            { question: "Pilih imbuhan apitan yang betul: '___ (cinta) terhadap tanah air wajib dipupuk.'", options: [{ text: "Kecintaan", correct: true }, { text: "Percintaan", correct: false }, { text: "Mencintai", correct: false }, { text: "Dicintai", correct: false }] }
+                        ],
+                        ...Array.from({ length: 4 }, function(_, i) {
+                            return [
+                                { question: "[Fasa " + (i + 2) + "] Pilih imbuhan yang tepat bagi 'tani' (orang yang bertani):", options: [{ text: "Petani", correct: true }, { text: "Pertani", correct: false }, { text: "Penani", correct: false }, { text: "Menani", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Pilih Kata Ganda Berentak: 'Jalan menuju ke kampung itu ___.'", options: [{ text: "bengkang-bengkok", correct: true }, { text: "warna-warni", correct: false }, { text: "lauk-pauk", correct: false }, { text: "ramah-tamah", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Pilih imbuhan apitan yang betul bagi kata dasar 'indah':", options: [{ text: "Keindahan", correct: true }, { text: "Pengindahan", correct: false }, { text: "Berindahan", correct: false }, { text: "Terindahan", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Manakah perkataan berimbuhan sisipan '-em-'?", options: [{ text: "Gemilang", correct: true }, { text: "Memilang", correct: false }, { text: "Terbilang", correct: false }, { text: "Sembilang", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Pilih imbuhan pinjaman yang tepat: '___ (tata) bahasa Melayu sangat penting.'", options: [{ text: "Tatabahasa", correct: true }, { text: "Prabahasa", correct: false }, { text: "Pascabahasa", correct: false }, { text: "Dwibahasa", correct: false }] }
+                            ];
+                        })
+                    ]
+                },
+                {
+                    id: 'sintaksis_t6',
+                    title: '4. Sintaksis & Pemahaman',
+                    gameType: 'spacebattle',
+                    gameLabel: 'Konsep Space Battle',
+                    description: 'Ayat Pasif, Ayat Majmuk & Cakap Pindah (Tahun 6)',
+                    icon: 'fa-user-astronaut',
+                    colorClass: 'c-4',
+                    phases: [
+                        [
+                            { question: "Tukarkan kepada Ayat Pasif Diri Pertama yang betul: 'Saya telah membaca buku rujukan itu.'", options: [{ text: "Buku rujukan itu telah saya baca.", correct: true }, { text: "Buku rujukan itu telah dibaca oleh saya.", correct: false }, { text: "Buku rujukan itu saya telah baca.", correct: false }, { text: "Telah dibaca buku rujukan itu oleh saya.", correct: false }] },
+                            { question: "Pilih Ayat Pasif Diri Kedua yang gramatis:", options: [{ text: "Tugasan sains itu mesti kamu selesaikan segera.", correct: true }, { text: "Tugasan sains itu mesti diselesaikan oleh kamu segera.", correct: false }, { text: "Tugasan sains itu kamu mesti selesaikan segera.", correct: false }, { text: "Mesti diselesaikan tugasan sains itu oleh kamu.", correct: false }] },
+                            { question: "Pilih Cakap Pindah yang tepat: \"Saya akan menyertai pertandingan syarahan esok,\" kata Aina.", options: [{ text: "Aina berkata bahawa dia akan menyertai pertandingan syarahan pada keesokan harinya.", correct: true }, { text: "Aina berkata bahawa saya akan menyertai pertandingan syarahan esok.", correct: false }, { text: "Aina bertanya sama ada dia menyertai pertandingan syarahan semalam.", correct: false }, { text: "Aina berjanji dia telah menyertai pertandingan syarahan.", correct: false }] },
+                            { question: "Kenal pasti jenis ayat berikut: 'Tolong hantarkan buku latihan ini ke bilik guru.'", options: [{ text: "Ayat Permintaan (Ayat Perintah)", correct: true }, { text: "Ayat Larangan (Ayat Perintah)", correct: false }, { text: "Ayat Penyata", correct: false }, { text: "Ayat Seruan", correct: false }] },
+                            { question: "Pilih ayat yang menggunakan tanda baca dan kata seru yang betul:", options: [{ text: "Wah, canggihnya ciptaan robotik murid-murid Tahun 6 ini!", correct: true }, { text: "Wah! Canggihnya ciptaan robotik murid-murid Tahun 6 ini.", correct: false }, { text: "Wah, canggihnya ciptaan robotik murid-murid Tahun 6 ini?", correct: false }, { text: "Amboi, canggihnya ciptaan robotik murid-murid Tahun 6 ini!", correct: false }] },
+                            { question: "Pilih ayat yang gramatis (tiada kesalahan bahasa):", options: [{ text: "Pelbagai aktiviti menarik diadakan sempena Bulan Bahasa.", correct: true }, { text: "Pelbagai aktiviti-aktiviti menarik diadakan sempena Bulan Bahasa.", correct: false }, { text: "Diadakan pelbagai aktiviti-aktiviti menarik sempena Bulan Bahasa.", correct: false }, { text: "Pelbagai aktiviti menarik di adakan sempena Bulan Bahasa.", correct: false }] },
+                            { question: "Apakah jenis ayat majmuk berikut: 'Murid yang rajin membaca itu telah dinobatkan sebagai Tokoh NILAM.'", options: [{ text: "Ayat Majmuk Pancangan Relatif", correct: true }, { text: "Ayat Majmuk Gabungan", correct: false }, { text: "Ayat Majmuk Pancangan Komplemen", correct: false }, { text: "Ayat Tunggal", correct: false }] },
+                            { question: "Pilih ayat penyata yang paling tepat:", options: [{ text: "Malaysia merupakan antara pengeluar utama minyak sawit dunia.", correct: true }, { text: "Bilakah Malaysia menjadi pengeluar minyak sawit?", correct: false }, { text: "Syabas, Malaysia berjaya mengeluarkan minyak sawit!", correct: false }, { text: "Sila eksport minyak sawit Malaysia ke luar negara.", correct: false }] }
+                        ],
+                        ...Array.from({ length: 4 }, function(_, i) {
+                            return [
+                                { question: "[Fasa " + (i + 2) + "] Pilih Ayat Pasif Diri Ketiga yang betul:", options: [{ text: "Bola itu ditendang oleh Danish ke arah gol.", correct: true }, { text: "Bola itu Danish tendang ke arah gol.", correct: false }, { text: "Bola itu ditendang Danish oleh ke arah gol.", correct: false }, { text: "Tendang bola itu oleh Danish ke arah gol.", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Pilih Ayat Larangan yang betul:", options: [{ text: "Jangan membuang sampah di merata-rata tempat.", correct: true }, { text: "Sila membuang sampah di merata-rata tempat.", correct: false }, { text: "Harap membuang sampah di dalam tong.", correct: false }, { text: "Tolong buang sampah itu sekarang.", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Pilih ayat yang betul struktur bahasanya:", options: [{ text: "Demi menjaga keselamatan, kita hendaklah mematuhi undang-undang.", correct: true }, { text: "Demi untuk menjaga keselamatan, kita hendaklah mematuhi undang-undang.", correct: false }, { text: "Kerana demi menjaga keselamatan, kita mematuhi undang-undang.", correct: false }, { text: "Untuk demi menjaga keselamatan, patuhilah undang-undang.", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Pilih ayat tanya dengan kata tanya yang betul:", options: [{ text: "Bagaimanakah cara membuat kompos organik?", correct: true }, { text: "Bagaimana cara membuat kompos organik itu?", correct: false }, { text: "Di manakah cara membuat kompos organik?", correct: false }, { text: "Siapakah cara membuat kompos organik?", correct: false }] },
+                                { question: "[Fasa " + (i + 2) + "] Pilih ayat songsang yang tepat:", options: [{ text: "Sangat merdu suara penyanyi cilik itu.", correct: true }, { text: "Suara penyanyi cilik itu sangat merdu.", correct: false }, { text: "Penyanyi cilik itu bersuara merdu.", correct: false }, { text: "Merdu sangat suara itu penyanyi cilik.", correct: false }] }
+                            ];
+                        })
+                    ]
+                }
+            ]
+        };
+
+        let gameDatabase = JSON.parse(JSON.stringify(defaultGameData));
+
+        const savedDb = localStorage.getItem('kembara_bm_t6_2026_db');
+        if (savedDb) {
+            try {
+                const parsedDb = JSON.parse(savedDb);
+                if (parsedDb && Array.isArray(parsedDb.modules) && parsedDb.modules.length > 0) {
+                    gameDatabase = parsedDb;
+                }
+            } catch (e) {
+                console.error("Ralat memuat cache tempatan:", e);
+            }
+        }
+
+        /* ==========================================
+           SINKRONISASI CLOUD FIREBASE & LIVE PLAYERS
+           ========================================== */
+        let livePlayersMap = {};
+
+        async function saveGameDatabase() {
+            localStorage.setItem('kembara_bm_t6_2026_db', JSON.stringify(gameDatabase));
+
+            if (!db) {
+                showToast("Disimpan di pelayar (Mod Tempatan)");
+                return;
+            }
+
+            try {
+                await db.collection("kembara_bm_t6_sistem").doc("data_utama").set({
+                    payloadJson: JSON.stringify(gameDatabase),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: loggedInAdmin || "System"
+                });
+                updateCloudStatusUI('connected', 'Firebase Cloud & Live Aktif');
+                showToast("Berjaya disimpan ke Firebase Cloud! ☁️");
+            } catch (error) {
+                console.error("Ralat menyimpan ke Firestore:", error);
+                updateCloudStatusUI('offline', 'Mod Tempatan (Ralat Sambungan Cloud)');
+                showToast("Disimpan secara tempatan (Offline/Rules)");
+            }
+        }
+
+        async function syncPlayerProgressToLive(statusText) {
+            if (!currentUser || !currentUser.id) return;
+
+            const playerRecord = {
+                id: currentUser.id,
+                name: currentUser.name || "Murid Tahun 6",
+                className: currentUser.className || "6 Bestari",
+                avatar: currentUser.avatar || "fa-user-astronaut",
+                score: score,
+                streak: streak,
+                currentModule: getModuleById(currentModuleId)?.title || "Menu Utama",
+                currentPhase: currentPhase + 1,
+                statusText: statusText || "Sedang Bermain",
+                updatedAtMs: Date.now()
+            };
+
+            livePlayersMap[currentUser.id] = playerRecord;
+            localStorage.setItem('kembara_bm_t6_live_players', JSON.stringify(livePlayersMap));
+            renderLiveLeaderboard();
+
+            if (db) {
+                try {
+                    await db.collection("kembara_bm_t6_live_players").doc(currentUser.id).set(playerRecord, { merge: true });
+                } catch (e) {}
+            }
+        }
+
+        function initFirebaseRealtimeSync() {
+            try {
+                const localLive = JSON.parse(localStorage.getItem('kembara_bm_t6_live_players') || '{}');
+                livePlayersMap = localLive;
+            } catch (e) {}
+
+            if (!db) {
+                updateCloudStatusUI('offline', 'Mod Tempatan (Sedia Digunakan)');
+                renderLiveLeaderboard();
+                return;
+            }
+
+            db.collection("kembara_bm_t6_sistem").doc("data_utama").onSnapshot(
+                async function(doc) {
+                    if (doc.exists && doc.data().payloadJson) {
+                        try {
+                            const cloudData = JSON.parse(doc.data().payloadJson);
+                            if (cloudData && Array.isArray(cloudData.modules) && cloudData.modules.length > 0) {
+                                gameDatabase = cloudData;
+                                localStorage.setItem('kembara_bm_t6_2026_db', JSON.stringify(gameDatabase));
+                                renderModuleMenu();
+                                if (document.getElementById('screen-admin').classList.contains('active')) {
+                                    populateAdminModuleDropdowns();
+                                    renderAdminModulesList();
+                                    renderAdminPhasesList();
+                                    renderAdminQuestionsList();
+                                }
+                            }
+                            updateCloudStatusUI('connected', 'Firebase Cloud & Live Aktif');
+                        } catch (e) {
+                            console.error("Ralat membaca data Firebase:", e);
+                        }
+                    } else {
+                        await saveGameDatabase();
+                    }
+                },
+                function() {
+                    updateCloudStatusUI('offline', 'Mod Tempatan (Sedia Digunakan)');
+                }
+            );
+
+            db.collection("kembara_bm_t6_live_players").onSnapshot(
+                function(snapshot) {
+                    const updatedMap = {};
+                    snapshot.forEach(function(doc) {
+                        updatedMap[doc.id] = doc.data();
+                    });
+                    livePlayersMap = updatedMap;
+                    localStorage.setItem('kembara_bm_t6_live_players', JSON.stringify(livePlayersMap));
+                    renderLiveLeaderboard();
+                },
+                function(err) {
+                    console.warn("Live listener fallback tempatan:", err);
+                }
+            );
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-notification');
+            if (!toast) return;
+            document.getElementById('toast-text').textContent = msg;
+            toast.style.display = 'flex';
+            setTimeout(function() {
+                toast.style.display = 'none';
+            }, 2800);
+        }
+
+        function shuffleArray(array) {
+            const arr = array.slice();
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+            }
+            return arr;
+        }
+
+        /* ==========================================
+           2. SISTEM PENGURUSAN PENGGUNA (MULTI-USER)
+           ========================================== */
+        function generatePlayerId() {
+            return 'player_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+        }
+
+        let currentUser = {
+            id: generatePlayerId(),
+            name: "",
+            className: "6 Bestari",
+            avatar: "fa-user-astronaut",
+            unlockedPhases: {},
+            registered: false
+        };
+
+        const savedUserData = localStorage.getItem('kembara_bm_t6_user');
+        if (savedUserData) {
+            try {
+                const parsed = JSON.parse(savedUserData);
+                if (parsed && parsed.name) {
+                    currentUser = parsed;
+                    if (!currentUser.id) currentUser.id = generatePlayerId();
+                }
+            } catch (e) {}
+        }
+
+        function saveUserData() {
+            localStorage.setItem('kembara_bm_t6_user', JSON.stringify(currentUser));
+        }
+
+        let currentModuleId = 'tatabahasa_t6';
+        let currentPhase = 0;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let phaseScore = 0;
+        let streak = 0;
+        let selectedAvatarIcon = 'fa-user-astronaut';
+
+        function selectAvatar(element) {
+            if (!element) return;
+            document.querySelectorAll('.avatar-option').forEach(function(el) {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedAvatarIcon = element.getAttribute('data-icon') || 'fa-user-astronaut';
+        }
+
+        function registerUser() {
+            const nameEl = document.getElementById('player-name-input');
+            const classEl = document.getElementById('player-class-input');
+            const nameInput = nameEl ? nameEl.value.trim() : '';
+            const classInput = (classEl && classEl.value.trim()) ? classEl.value.trim() : '6 Bestari';
+
+            if (!nameInput) {
+                showToast("Sila masukkan nama anda dahulu!");
+                if (nameEl) nameEl.focus();
+                return;
+            }
+
+            if (currentUser.name !== nameInput) {
+                currentUser.id = generatePlayerId();
+                score = 0;
+                streak = 0;
+                currentUser.unlockedPhases = {};
+            }
+
+            currentUser.name = nameInput;
+            currentUser.className = classInput;
+            currentUser.avatar = selectedAvatarIcon;
+            currentUser.registered = true;
+            saveUserData();
+
+            document.getElementById('user-name-display').textContent = currentUser.name;
+            document.getElementById('user-class-display').textContent = currentUser.className + " • KPM 2026";
+            document.getElementById('user-avatar-display').innerHTML = '<i class="fa-solid ' + currentUser.avatar + '"></i>';
+            document.getElementById('main-header').style.display = 'flex';
+            updateStats();
+
+            syncPlayerProgressToLive("Memilih Modul");
+            renderModuleMenu();
+            showScreen('screen-menu');
+        }
+
+        function showScreen(screenId) {
+            stopActiveGameLoop();
+            document.querySelectorAll('.screen').forEach(function(s) {
+                s.classList.remove('active');
+            });
+            const target = document.getElementById(screenId);
+            if (target) target.classList.add('active');
+        }
+
+        function backToLogin() {
+            stopActiveGameLoop();
+            document.getElementById('main-header').style.display = 'none';
+            showScreen('screen-auth');
+        }
+
+        /* ==========================================
+           3. JANA MENU MODUL & FASA SECARA DINAMIK
+           ========================================== */
+        function getModuleById(modId) {
+            return gameDatabase.modules.find(function(m) { return m.id === modId; }) || gameDatabase.modules[0];
+        }
+
+        function getGameTypeMeta(gameType) {
+            const map = {
+                pacman: { label: 'Konsep Pac-Man', icon: 'fa-ghost', badge: '👾 MOD PAC-MAN' },
+                angrybird: { label: 'Konsep Angry Bird', icon: 'fa-dove', badge: '🐦 MOD ANGRY BIRD' },
+                flappybird: { label: 'Konsep Flappy Bird', icon: 'fa-feather-pointed', badge: '🐤 MOD FLAPPY BIRD' },
+                spacebattle: { label: 'Konsep Space Battle', icon: 'fa-user-astronaut', badge: '🚀 MOD SPACE BATTLE' },
+                monsterbattle: { label: 'Quiz Monster Battle', icon: 'fa-dragon', badge: '🐉 MOD MONSTER BATTLE' },
+                speedrunner: { label: 'Quiz Speed Runner', icon: 'fa-person-running', badge: '⚡ MOD SPEED RUNNER' },
+                tetris: { label: 'Quiz Tetris', icon: 'fa-cubes-stacked', badge: '🧱 MOD QUIZ TETRIS' },
+                superjumper: { label: 'Quiz Super Jumper', icon: 'fa-up-long', badge: '🦘 MOD SUPER JUMPER' }
+            };
+            return map[gameType] || map.pacman;
+        }
+
+        function renderModuleMenu() {
+            const grid = document.getElementById('dynamic-menu-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            gameDatabase.modules.forEach(function(mod, idx) {
+                const defaultOrder = ['pacman', 'angrybird', 'flappybird', 'spacebattle'];
+                const gType = mod.gameType || defaultOrder[idx % 4];
+                const meta = getGameTypeMeta(gType);
+
+                const card = document.createElement('div');
+                card.className = 'menu-card ' + (mod.colorClass || 'c-1');
+                card.addEventListener('click', function() {
+                    openPhaseSelection(mod.id);
+                });
+                card.innerHTML =
+                    '<span class="game-mode-pill"><i class="fa-solid ' + meta.icon + '"></i> ' + meta.label + '</span>' +
+                    '<div class="menu-icon"><i class="fa-solid ' + (mod.icon || meta.icon) + '"></i></div>' +
+                    '<h3 style="font-family:\'Fredoka One\'; font-size:1.15rem;">' + mod.title + '</h3>' +
+                    '<p style="font-size:0.83rem; color:#64748B; font-weight:700;">' + (mod.description || '') + '</p>' +
+                    '<span style="font-size:0.75rem; font-weight:800; color:var(--primary); background:#EEF2FF; padding:3px 10px; border-radius:12px;">' +
+                        mod.phases.length + ' Fasa' +
+                    '</span>';
+                grid.appendChild(card);
+            });
+        }
+
+        function openPhaseSelection(moduleId) {
+            const mod = getModuleById(moduleId);
+            if (!mod) return;
+            currentModuleId = mod.id;
+
+            const defaultOrder = ['pacman', 'angrybird', 'flappybird', 'spacebattle'];
+            const modIdx = gameDatabase.modules.findIndex(function(m) { return m.id === mod.id; });
+            const gType = mod.gameType || defaultOrder[Math.max(0, modIdx) % 4];
+            const meta = getGameTypeMeta(gType);
+
+            document.getElementById('module-title-tag').textContent = mod.title + ' (' + meta.label + ')';
+            document.getElementById('module-game-subtitle').textContent = 'Arena ' + meta.label + ' • Pilih Fasa';
+
+            const container = document.getElementById('phase-container');
+            container.innerHTML = '';
+
+            const unlockedLevel = currentUser.unlockedPhases[mod.id] || 1;
+            const totalPhases = mod.phases.length;
+
+            for (let i = 1; i <= totalPhases; i++) {
+                const isLocked = i > unlockedLevel;
+                const isCompleted = i < unlockedLevel;
+                const qCount = mod.phases[i - 1].length;
+                const card = document.createElement('div');
+                card.className = 'phase-card' + (isLocked ? ' locked' : '');
+                card.innerHTML =
+                    '<div class="phase-number">Fasa ' + i + '</div>' +
+                    '<div class="status-icon">' +
+                        '<i class="fa-solid ' + (isLocked ? 'fa-lock' : (isCompleted ? 'fa-circle-check' : 'fa-star')) + '" style="color:' + (isLocked ? '#94A3B8' : (isCompleted ? '#10B981' : '#F59E0B')) + ';"></i>' +
+                    '</div>' +
+                    '<div style="font-size:0.75rem; font-weight:700; margin-top:4px; color:' + (isLocked ? '#94A3B8' : '#475569') + ';">' +
+                        (isLocked ? 'Terkunci' : qCount + ' Misi') +
+                    '</div>';
+
+                if (!isLocked) {
+                    (function(phaseIdx) {
+                        card.addEventListener('click', function() {
+                            startPhase(phaseIdx);
+                        });
+                    })(i - 1);
+                }
+
+                container.appendChild(card);
+            }
+
+            showScreen('screen-phases');
+        }
+
+        function startPhase(phaseIndex) {
+            const mod = getModuleById(currentModuleId);
+            if (!mod || !mod.phases[phaseIndex] || mod.phases[phaseIndex].length === 0) {
+                showToast("Tiada soalan dalam fasa ini lagi. Sila tambah di Panel Guru.");
+                return;
+            }
+
+            currentPhase = phaseIndex;
+            currentQuestionIndex = 0;
+            phaseScore = 0;
+            streak = 0;
+            updateStats();
+
+            const defaultOrder = ['pacman', 'angrybird', 'flappybird', 'spacebattle'];
+            const modIdx = gameDatabase.modules.findIndex(function(m) { return m.id === mod.id; });
+            const gType = mod.gameType || defaultOrder[Math.max(0, modIdx) % 4];
+            const meta = getGameTypeMeta(gType);
+
+            document.getElementById('game-mode-badge').textContent = meta.badge;
+            document.getElementById('game-phase-tag').textContent = 'Fasa ' + (phaseIndex + 1);
+            
+            syncPlayerProgressToLive('Bermain ' + mod.title + ' (Fasa ' + (phaseIndex + 1) + ')');
+            showScreen('screen-game');
+            loadQuestion();
+        }
+
+        /* ==========================================
+           4. ENJIN PERMAINAN INTERAKTIF (CANVAS ARCADE)
+           ========================================== */
+        let activeAnimFrame = null;
+        let activeKeyHandler = null;
+        let activeKeyUpHandler = null;
+
+        function stopActiveGameLoop() {
+            if (activeAnimFrame) {
+                cancelAnimationFrame(activeAnimFrame);
+                activeAnimFrame = null;
+            }
+            if (activeKeyHandler) {
+                window.removeEventListener('keydown', activeKeyHandler);
+                activeKeyHandler = null;
+            }
+            if (activeKeyUpHandler) {
+                window.removeEventListener('keyup', activeKeyUpHandler);
+                activeKeyUpHandler = null;
+            }
+        }
+
+        function normalizeQuestionOptions(qData) {
+            if (qData.options && Array.isArray(qData.options)) {
+                return shuffleArray(qData.options);
+            }
+            if (qData.categories && qData.category) {
+                return shuffleArray(qData.categories.map(function(cat) {
+                    return { text: cat, correct: cat === qData.category };
+                }));
+            }
+            if (qData.affixOptions && qData.correctAffix) {
+                return shuffleArray(qData.affixOptions.map(function(aff) {
+                    return { text: aff + "-" + (qData.rootWord || ""), correct: aff === qData.correctAffix };
+                }));
+            }
+            return [{ text: "Jawapan Betul", correct: true }, { text: "Pilihan Salah", correct: false }];
+        }
+
+        function loadQuestion() {
+            stopActiveGameLoop();
+            hideFeedback();
+
+            const mod = getModuleById(currentModuleId);
+            const questions = mod.phases[currentPhase];
+            
+            if (!questions || currentQuestionIndex >= questions.length) {
+                finishPhase();
+                return;
+            }
+
+            const qData = questions[currentQuestionIndex];
+            const options = normalizeQuestionOptions(qData);
+
+            const progressPct = (currentQuestionIndex / questions.length) * 100;
+            document.getElementById('progress-fill').style.width = progressPct + '%';
+            document.getElementById('instruction-text').innerHTML =
+                '<span style="color:var(--primary); font-size:0.85rem;">[Misi ' + (currentQuestionIndex + 1) + '/' + questions.length + ']</span> ' + qData.question;
+
+            const area = document.getElementById('game-interactive-area');
+            area.innerHTML = '';
+
+            const defaultOrder = ['pacman', 'angrybird', 'flappybird', 'spacebattle'];
+            const modIdx = gameDatabase.modules.findIndex(function(m) { return m.id === mod.id; });
+            const gameType = mod.gameType || defaultOrder[Math.max(0, modIdx) % 4];
+
+            if (gameType === 'pacman') {
+                launchPacManGame(options, area);
+            } else if (gameType === 'angrybird') {
+                launchAngryBirdGame(options, area);
+            } else if (gameType === 'flappybird') {
+                launchFlappyBirdGame(options, area);
+            } else if (gameType === 'spacebattle') {
+                launchSpaceBattleGame(options, area);
+            } else if (gameType === 'monsterbattle') {
+                launchMonsterBattleGame(options, area);
+            } else if (gameType === 'speedrunner') {
+                launchSpeedRunnerGame(options, area);
+            } else if (gameType === 'tetris') {
+                launchTetrisGame(options, area);
+            } else if (gameType === 'superjumper') {
+                launchSuperJumperGame(options, area);
+            } else {
+                launchPacManGame(options, area);
+            }
+        }
+
+        function setupResponsiveCanvas(container) {
+            const frame = document.createElement('div');
+            frame.className = 'canvas-frame';
+            const canvas = document.createElement('canvas');
+            frame.appendChild(canvas);
+            container.appendChild(frame);
+
+            function resize() {
+                const rect = frame.getBoundingClientRect();
+                canvas.width = Math.max(320, Math.round(rect.width)) || 720;
+                canvas.height = Math.max(250, Math.round(rect.height)) || 350;
+            }
+            resize();
+            return { canvas: canvas, ctx: canvas.getContext('2d'), frame: frame };
+        }
+
+        function drawWrappedLabel(ctx, text, x, y, maxWidth, fontSize) {
+            ctx.font = '800 ' + fontSize + 'px Nunito, sans-serif';
+            const words = String(text).split(' ');
+            const lines = [];
+            let currentLine = words[0] || '';
+
+            for (let i = 1; i < words.length; i++) {
+                const testLine = currentLine + ' ' + words[i];
+                if (ctx.measureText(testLine).width <= maxWidth) {
+                    currentLine = testLine;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            lines.push(currentLine);
+
+            const lineHeight = fontSize + 3;
+            const startY = y - ((lines.length - 1) * lineHeight) / 2;
+            lines.forEach(function(line, idx) {
+                ctx.fillText(line, x, startY + idx * lineHeight);
+            });
+        }
+
+        /* ------------------------------------------
+           GAME 1: PAC-MAN
+           ------------------------------------------ */
+        function launchPacManGame(options, area) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arcade-wrapper';
+            area.appendChild(wrapper);
+
+            const setup = setupResponsiveCanvas(wrapper);
+            const canvas = setup.canvas;
+            const ctx = setup.ctx;
+            const W = canvas.width;
+            const H = canvas.height;
+
+            const pac = { x: W / 2, y: H / 2, vx: 0, vy: 0, speed: 3.4, r: 18, mouth: 0, dir: 0 };
+            const corners = [
+                { x: 105, y: 65 },
+                { x: W - 105, y: 65 },
+                { x: 105, y: H - 65 },
+                { x: W - 105, y: H - 65 }
+            ];
+
+            const orbColors = ['#F59E0B', '#06B6D4', '#EC4899', '#10B981'];
+            const orbs = options.map(function(opt, idx) {
+                return {
+                    x: corners[idx % 4].x,
+                    y: corners[idx % 4].y,
+                    w: 165,
+                    h: 54,
+                    text: opt.text,
+                    correct: opt.correct,
+                    color: orbColors[idx % 4]
+                };
+            });
+
+            const ghosts = [
+                { x: W * 0.28, y: H * 0.5, vx: 1.6, vy: 1.2, color: '#EF4444' },
+                { x: W * 0.72, y: H * 0.5, vx: -1.5, vy: -1.3, color: '#A855F7' }
+            ];
+
+            const pellets = [];
+            for (let gx = 40; gx < W - 30; gx += 48) {
+                for (let gy = 35; gy < H - 25; gy += 48) {
+                    pellets.push({ x: gx, y: gy, eaten: false });
+                }
+            }
+
+            let resolved = false;
+
+            function setDir(dx, dy, angle) {
+                pac.vx = dx * pac.speed;
+                pac.vy = dy * pac.speed;
+                pac.dir = angle;
+            }
+
+            activeKeyHandler = function(e) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) !== -1) e.preventDefault();
+                if (e.key === 'ArrowUp' || e.key === 'w') setDir(0, -1, -Math.PI / 2);
+                if (e.key === 'ArrowDown' || e.key === 's') setDir(0, 1, Math.PI / 2);
+                if (e.key === 'ArrowLeft' || e.key === 'a') setDir(-1, 0, Math.PI);
+                if (e.key === 'ArrowRight' || e.key === 'd') setDir(1, 0, 0);
+            };
+            window.addEventListener('keydown', activeKeyHandler);
+
+            canvas.addEventListener('pointerdown', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const tx = (e.clientX - rect.left) * (W / rect.width);
+                const ty = (e.clientY - rect.top) * (H / rect.height);
+                const angle = Math.atan2(ty - pac.y, tx - pac.x);
+                pac.vx = Math.cos(angle) * pac.speed;
+                pac.vy = Math.sin(angle) * pac.speed;
+                pac.dir = angle;
+            });
+
+            const ctrlBar = document.createElement('div');
+            ctrlBar.className = 'arcade-controls-bar';
+            ctrlBar.innerHTML =
+                '<button type="button" class="dpad-btn" data-dir="left"><i class="fa-solid fa-arrow-left"></i></button>' +
+                '<button type="button" class="dpad-btn" data-dir="up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button type="button" class="dpad-btn" data-dir="down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                '<button type="button" class="dpad-btn" data-dir="right"><i class="fa-solid fa-arrow-right"></i></button>' +
+                '<span class="arcade-hint">Gerakkan Pac-Man untuk makan kapsul jawapan tepat & elak hantu!</span>';
+            ctrlBar.querySelectorAll('.dpad-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const d = btn.getAttribute('data-dir');
+                    if (d === 'up') setDir(0, -1, -Math.PI / 2);
+                    if (d === 'down') setDir(0, 1, Math.PI / 2);
+                    if (d === 'left') setDir(-1, 0, Math.PI);
+                    if (d === 'right') setDir(1, 0, 0);
+                });
+            });
+            wrapper.appendChild(ctrlBar);
+
+            function loop() {
+                if (resolved) return;
+
+                ctx.fillStyle = '#090D16';
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.strokeStyle = '#2563EB';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(10, 10, W - 20, H - 20);
+
+                pellets.forEach(function(p) {
+                    if (!p.eaten) {
+                        if (Math.hypot(pac.x - p.x, pac.y - p.y) < pac.r + 4) p.eaten = true;
+                        ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                pac.x = Math.max(26, Math.min(W - 26, pac.x + pac.vx));
+                pac.y = Math.max(26, Math.min(H - 26, pac.y + pac.vy));
+                pac.mouth += 0.16;
+
+                orbs.forEach(function(orb) {
+                    ctx.fillStyle = orb.color;
+                    ctx.beginPath();
+                    ctx.roundRect(orb.x - orb.w / 2, orb.y - orb.h / 2, orb.w, orb.h, 14);
+                    ctx.fill();
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    drawWrappedLabel(ctx, orb.text, orb.x, orb.y, orb.w - 14, 13);
+
+                    if (
+                        pac.x + pac.r > orb.x - orb.w / 2 &&
+                        pac.x - pac.r < orb.x + orb.w / 2 &&
+                        pac.y + pac.r > orb.y - orb.h / 2 &&
+                        pac.y - pac.r < orb.y + orb.h / 2
+                    ) {
+                        resolved = true;
+                        checkAnswer(orb.correct);
+                    }
+                });
+
+                ghosts.forEach(function(g) {
+                    g.x += g.vx;
+                    g.y += g.vy;
+                    if (g.x < 35 || g.x > W - 35) g.vx *= -1;
+                    if (g.y < 35 || g.y > H - 35) g.vy *= -1;
+
+                    ctx.fillStyle = g.color;
+                    ctx.beginPath();
+                    ctx.arc(g.x, g.y - 4, 15, Math.PI, 0);
+                    ctx.lineTo(g.x + 15, g.y + 14);
+                    ctx.lineTo(g.x + 5, g.y + 8);
+                    ctx.lineTo(g.x - 5, g.y + 14);
+                    ctx.lineTo(g.x - 15, g.y + 8);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(g.x - 5, g.y - 4, 4, 0, Math.PI * 2);
+                    ctx.arc(g.x + 5, g.y - 4, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (Math.hypot(pac.x - g.x, pac.y - g.y) < pac.r + 12) {
+                        pac.x = W / 2;
+                        pac.y = H / 2;
+                        pac.vx = 0;
+                        pac.vy = 0;
+                    }
+                });
+
+                const openAngle = Math.abs(Math.sin(pac.mouth)) * 0.65 + 0.08;
+                ctx.save();
+                ctx.translate(pac.x, pac.y);
+                ctx.rotate(pac.dir);
+                ctx.fillStyle = '#FACC15';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, pac.r, openAngle, Math.PI * 2 - openAngle);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
+                activeAnimFrame = requestAnimationFrame(loop);
+            }
+
+            activeAnimFrame = requestAnimationFrame(loop);
+        }
+
+        /* ------------------------------------------
+           GAME 2: ANGRY BIRD (+ PROJECTION DOTS)
+           ------------------------------------------ */
+        function launchAngryBirdGame(options, area) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arcade-wrapper';
+            area.appendChild(wrapper);
+
+            const setup = setupResponsiveCanvas(wrapper);
+            const canvas = setup.canvas;
+            const ctx = setup.ctx;
+            const W = canvas.width;
+            const H = canvas.height;
+            const isCompact = W < 540;
+
+            const sling = { x: isCompact ? 68 : 105, y: H - 80 };
+            const bird = { x: sling.x, y: sling.y, vx: 0, vy: 0, r: isCompact ? 15 : 18, launched: false, dragging: false };
+            const gravity = 0.28;
+
+            const targetW = isCompact ? Math.min(185, W * 0.48) : 235;
+            const targetX = W - targetW / 2 - (isCompact ? 12 : 28);
+            const slotHeight = (H - 36) / options.length;
+            const targets = options.map(function(opt, idx) {
+                return {
+                    x: targetX,
+                    y: 20 + idx * slotHeight + slotHeight / 2,
+                    w: targetW,
+                    h: Math.min(62, slotHeight - 8),
+                    text: opt.text,
+                    correct: opt.correct
+                };
+            });
+
+            let resolved = false;
+            let aimVx = 10.5;
+            let aimVy = -5.5;
+
+            function resetBird() {
+                bird.x = sling.x;
+                bird.y = sling.y;
+                bird.vx = 0;
+                bird.vy = 0;
+                bird.launched = false;
+                bird.dragging = false;
+            }
+
+            function getCanvasPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: (e.clientX - rect.left) * (W / rect.width),
+                    y: (e.clientY - rect.top) * (H / rect.height)
+                };
+            }
+
+            function calculateLaunchVelocityToPoint(tx, ty) {
+                const dx = Math.max(40, tx - sling.x);
+                const dy = ty - sling.y;
+                const flightFrames = Math.max(24, Math.min(48, dx / 11));
+                return {
+                    vx: dx / flightFrames,
+                    vy: (dy - 0.5 * gravity * flightFrames * flightFrames) / flightFrames
+                };
+            }
+
+            canvas.addEventListener('pointerdown', function(e) {
+                if (bird.launched || resolved) return;
+                const pos = getCanvasPos(e);
+                if (Math.hypot(pos.x - bird.x, pos.y - bird.y) < 55) {
+                    bird.dragging = true;
+                } else {
+                    const vel = calculateLaunchVelocityToPoint(pos.x, pos.y);
+                    aimVx = vel.vx;
+                    aimVy = vel.vy;
+                    bird.vx = vel.vx;
+                    bird.vy = vel.vy;
+                    bird.launched = true;
+                }
+            });
+
+            canvas.addEventListener('pointermove', function(e) {
+                if (bird.launched || resolved) return;
+                const pos = getCanvasPos(e);
+                if (bird.dragging) {
+                    const dx = pos.x - sling.x;
+                    const dy = pos.y - sling.y;
+                    const dist = Math.hypot(dx, dy);
+                    const maxPull = isCompact ? 60 : 80;
+                    if (dist > maxPull) {
+                        bird.x = sling.x + (dx / dist) * maxPull;
+                        bird.y = sling.y + (dy / dist) * maxPull;
+                    } else {
+                        bird.x = pos.x;
+                        bird.y = pos.y;
+                    }
+                    aimVx = (sling.x - bird.x) * 0.25;
+                    aimVy = (sling.y - bird.y) * 0.25;
+                } else if (pos.x > sling.x + 20) {
+                    const vel = calculateLaunchVelocityToPoint(pos.x, pos.y);
+                    aimVx = vel.vx;
+                    aimVy = vel.vy;
+                }
+            });
+
+            canvas.addEventListener('pointerup', function() {
+                if (!bird.dragging) return;
+                bird.dragging = false;
+                const pullX = sling.x - bird.x;
+                const pullY = sling.y - bird.y;
+                if (Math.hypot(pullX, pullY) > 12) {
+                    bird.vx = pullX * 0.25;
+                    bird.vy = pullY * 0.25;
+                    bird.launched = true;
+                } else {
+                    resetBird();
+                }
+            });
+
+            const ctrlBar = document.createElement('div');
+            ctrlBar.className = 'arcade-controls-bar';
+            ctrlBar.innerHTML = '<span class="arcade-hint">Tarik lastik (ikut titik unjuran putih) atau terus ketik kotak jawapan untuk melastik!</span>';
+            wrapper.appendChild(ctrlBar);
+
+            function drawProjectionDots() {
+                if (bird.launched) return;
+                const startX = bird.dragging ? bird.x : sling.x;
+                const startY = bird.dragging ? bird.y : sling.y;
+                const vx = aimVx;
+                const vy = aimVy;
+
+                for (let step = 3; step <= 42; step += 3) {
+                    const px = startX + vx * step;
+                    const py = startY + vy * step + 0.5 * gravity * step * step;
+                    if (px > W - 15 || py > H - 24 || py < 8) break;
+
+                    const alpha = Math.max(0.2, 1 - step / 46);
+                    const dotRadius = Math.max(2.5, 5.5 - step * 0.06);
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+                    ctx.beginPath();
+                    ctx.arc(px, py, dotRadius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = 'rgba(30, 41, 59, ' + (alpha * 0.65) + ')';
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+            }
+
+            function loop() {
+                if (resolved) return;
+
+                const grad = ctx.createLinearGradient(0, 0, 0, H);
+                grad.addColorStop(0, '#38BDF8');
+                grad.addColorStop(0.8, '#BAE6FD');
+                grad.addColorStop(1, '#22C55E');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.fillStyle = '#15803D';
+                ctx.fillRect(0, H - 24, W, 24);
+
+                targets.forEach(function(t) {
+                    ctx.fillStyle = '#92400E';
+                    ctx.beginPath();
+                    ctx.roundRect(t.x - t.w / 2, t.y - t.h / 2, t.w, t.h, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = '#FDE047';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    drawWrappedLabel(ctx, t.text, t.x, t.y, t.w - 14, isCompact ? 11 : 12);
+                });
+
+                drawProjectionDots();
+
+                ctx.strokeStyle = '#78350F';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.moveTo(sling.x, H - 24);
+                ctx.lineTo(sling.x, sling.y + 15);
+                ctx.lineTo(sling.x - 14, sling.y - 14);
+                ctx.moveTo(sling.x, sling.y + 15);
+                ctx.lineTo(sling.x + 14, sling.y - 14);
+                ctx.stroke();
+
+                if (!bird.launched) {
+                    ctx.strokeStyle = '#451A03';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(sling.x - 14, sling.y - 14);
+                    ctx.lineTo(bird.x, bird.y);
+                    ctx.lineTo(sling.x + 14, sling.y - 14);
+                    ctx.stroke();
+                }
+
+                if (bird.launched) {
+                    bird.vy += gravity;
+                    bird.x += bird.vx;
+                    bird.y += bird.vy;
+
+                    targets.forEach(function(t) {
+                        if (
+                            bird.x + bird.r > t.x - t.w / 2 &&
+                            bird.x - bird.r < t.x + t.w / 2 &&
+                            bird.y + bird.r > t.y - t.h / 2 &&
+                            bird.y - bird.r < t.y + t.h / 2
+                        ) {
+                            resolved = true;
+                            checkAnswer(t.correct);
+                        }
+                    });
+
+                    if (bird.x > W + 30 || bird.y > H + 30 || bird.x < -30) {
+                        resetBird();
+                    }
+                }
+
+                ctx.fillStyle = '#EF4444';
+                ctx.beginPath();
+                ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#7F1D1D';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(bird.x + 5, bird.y - 4, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FACC15';
+                ctx.beginPath();
+                ctx.moveTo(bird.x + bird.r - 2, bird.y);
+                ctx.lineTo(bird.x + bird.r + 9, bird.y + 4);
+                ctx.lineTo(bird.x + bird.r - 2, bird.y + 8);
+                ctx.closePath();
+                ctx.fill();
+
+                activeAnimFrame = requestAnimationFrame(loop);
+            }
+
+            activeAnimFrame = requestAnimationFrame(loop);
+        }
+
+        /* ------------------------------------------
+           GAME 3: FLAPPY BIRD (MULA PADA TAP PERTAMA)
+           ------------------------------------------ */
+        function launchFlappyBirdGame(options, area) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arcade-wrapper';
+            area.appendChild(wrapper);
+
+            const setup = setupResponsiveCanvas(wrapper);
+            const canvas = setup.canvas;
+            const ctx = setup.ctx;
+            const W = canvas.width;
+            const H = canvas.height;
+            const isCompact = W < 540;
+
+            const bird = { x: isCompact ? 75 : 115, y: H / 2, vy: 0, r: isCompact ? 15 : 17 };
+            const gravity = 0.14;
+            const flapPower = -3.9;
+
+            const gateW = isCompact ? Math.min(155, W * 0.44) : 195;
+            const gateX = W - gateW / 2 - (isCompact ? 14 : 30);
+            const laneH = (H - 30) / options.length;
+            const gates = options.map(function(opt, idx) {
+                return {
+                    x: gateX,
+                    y: 15 + idx * laneH + laneH / 2,
+                    w: gateW,
+                    h: laneH - 10,
+                    text: opt.text,
+                    correct: opt.correct
+                };
+            });
+
+            let resolved = false;
+            let gameStarted = false;
+            let hoverTick = 0;
+
+            function flap() {
+                if (resolved) return;
+                if (!gameStarted) {
+                    gameStarted = true;
+                }
+                bird.vy = flapPower;
+            }
+
+            activeKeyHandler = function(e) {
+                if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') {
+                    e.preventDefault();
+                    flap();
+                }
+            };
+            window.addEventListener('keydown', activeKeyHandler);
+
+            canvas.addEventListener('pointerdown', function(e) {
+                e.preventDefault();
+                flap();
+            });
+
+            const ctrlBar = document.createElement('div');
+            ctrlBar.className = 'arcade-controls-bar';
+            const flapBtn = document.createElement('button');
+            flapBtn.type = 'button';
+            flapBtn.className = 'dpad-btn';
+            flapBtn.innerHTML = '<i class="fa-solid fa-feather-pointed"></i> MULA / TERBANG (SPACE)';
+            flapBtn.addEventListener('click', flap);
+            ctrlBar.appendChild(flapBtn);
+
+            const hintSpan = document.createElement('span');
+            hintSpan.className = 'arcade-hint';
+            hintSpan.textContent = 'Baca soalan dahulu, kemudian ketik skrin / Space untuk mula terbang!';
+            ctrlBar.appendChild(hintSpan);
+            wrapper.appendChild(ctrlBar);
+
+            function loop() {
+                if (resolved) return;
+
+                const sky = ctx.createLinearGradient(0, 0, 0, H);
+                sky.addColorStop(0, '#0284C7');
+                sky.addColorStop(1, '#7DD3FC');
+                ctx.fillStyle = sky;
+                ctx.fillRect(0, 0, W, H);
+
+                if (gameStarted) {
+                    bird.vy += gravity;
+                    bird.y += bird.vy;
+                    if (bird.y < 22) { bird.y = 22; bird.vy = 0; }
+                    if (bird.y > H - 22) { bird.y = H - 22; bird.vy = -2.6; }
+                } else {
+                    hoverTick += 0.08;
+                    bird.y = H / 2 + Math.sin(hoverTick) * 6;
+                }
+
+                gates.forEach(function(g) {
+                    if (gameStarted) {
+                        g.x -= isCompact ? 0.55 : 0.7;
+                    }
+
+                    ctx.fillStyle = '#16A34A';
+                    ctx.beginPath();
+                    ctx.roundRect(g.x - g.w / 2, g.y - g.h / 2, g.w, g.h, 14);
+                    ctx.fill();
+                    ctx.strokeStyle = '#DCFCE7';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    drawWrappedLabel(ctx, g.text, g.x, g.y, g.w - 14, isCompact ? 11.5 : 13);
+
+                    if (
+                        gameStarted &&
+                        bird.x + bird.r > g.x - g.w / 2 &&
+                        bird.x - bird.r < g.x + g.w / 2 &&
+                        bird.y + bird.r > g.y - g.h / 2 &&
+                        bird.y - bird.r < g.y + g.h / 2
+                    ) {
+                        resolved = true;
+                        checkAnswer(g.correct);
+                    }
+                });
+
+                if (gameStarted && gates.length > 0 && gates[0].x < -100) {
+                    gates.forEach(function(g) { g.x = W + 90; });
+                }
+
+                ctx.fillStyle = '#FACC15';
+                ctx.beginPath();
+                ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#854D0E';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                ctx.fillStyle = '#FEF08A';
+                ctx.beginPath();
+                ctx.ellipse(bird.x - 4, bird.y + 3, 9, 5, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(bird.x + 6, bird.y - 4, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#F97316';
+                ctx.beginPath();
+                ctx.moveTo(bird.x + bird.r - 2, bird.y - 2);
+                ctx.lineTo(bird.x + bird.r + 9, bird.y + 2);
+                ctx.lineTo(bird.x + bird.r - 2, bird.y + 6);
+                ctx.closePath();
+                ctx.fill();
+
+                if (!gameStarted) {
+                    const bannerW = Math.min(280, W * 0.56);
+                    const bannerX = Math.max(12, bird.x - 10);
+                    const bannerY = Math.min(H - 68, bird.y + 34);
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                    ctx.beginPath();
+                    ctx.roundRect(bannerX, bannerY, bannerW, 38, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = '#FDE047';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FDE047';
+                    ctx.font = '800 ' + (isCompact ? 11 : 12.5) + 'px Nunito, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('👆 Ketik skrin / Space untuk MULA!', bannerX + bannerW / 2, bannerY + 19);
+                }
+
+                activeAnimFrame = requestAnimationFrame(loop);
+            }
+
+            activeAnimFrame = requestAnimationFrame(loop);
+        }
+
+        /* ------------------------------------------
+           GAME 4: SPACE BATTLE
+           ------------------------------------------ */
+        function launchSpaceBattleGame(options, area) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arcade-wrapper';
+            area.appendChild(wrapper);
+
+            const setup = setupResponsiveCanvas(wrapper);
+            const canvas = setup.canvas;
+            const ctx = setup.ctx;
+            const W = canvas.width;
+            const H = canvas.height;
+
+            const ship = { x: W / 2, y: H - 42, w: 36, h: 28, speed: 6 };
+            const lasers = [];
+            const keys = { left: false, right: false };
+
+            const colW = (W - 30) / options.length;
+            const ufos = options.map(function(opt, idx) {
+                return {
+                    baseX: 15 + idx * colW + colW / 2,
+                    x: 15 + idx * colW + colW / 2,
+                    y: 68,
+                    w: Math.min(175, colW - 10),
+                    h: 56,
+                    phase: idx * 1.4,
+                    text: opt.text,
+                    correct: opt.correct
+                };
+            });
+
+            const stars = Array.from({ length: 45 }, function() {
+                return { x: Math.random() * W, y: Math.random() * H, s: Math.random() * 2 + 1 };
+            });
+
+            let resolved = false;
+
+            function fireLaser() {
+                if (resolved) return;
+                lasers.push({ x: ship.x, y: ship.y - 18, vy: -9 });
+            }
+
+            activeKeyHandler = function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+                if (e.key === ' ' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    fireLaser();
+                }
+            };
+            activeKeyUpHandler = function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            };
+            window.addEventListener('keydown', activeKeyHandler);
+            window.addEventListener('keyup', activeKeyUpHandler);
+
+            canvas.addEventListener('pointerdown', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const tx = (e.clientX - rect.left) * (W / rect.width);
+                ship.x = Math.max(30, Math.min(W - 30, tx));
+                fireLaser();
+            });
+
+            const ctrlBar = document.createElement('div');
+            ctrlBar.className = 'arcade-controls-bar';
+            ctrlBar.innerHTML =
+                '<button type="button" class="dpad-btn" id="sb-left"><i class="fa-solid fa-caret-left"></i> Kiri</button>' +
+                '<button type="button" class="dpad-btn fire" id="sb-fire"><i class="fa-solid fa-crosshairs"></i> TEMBAK LASER</button>' +
+                '<button type="button" class="dpad-btn" id="sb-right">Kanan <i class="fa-solid fa-caret-right"></i></button>' +
+                '<span class="arcade-hint">Gerakkan kapal angkasa & tembak UFO jawapan yang tepat!</span>';
+            wrapper.appendChild(ctrlBar);
+
+            document.getElementById('sb-left').addEventListener('click', function() {
+                ship.x = Math.max(30, ship.x - 45);
+            });
+            document.getElementById('sb-right').addEventListener('click', function() {
+                ship.x = Math.min(W - 30, ship.x + 45);
+            });
+            document.getElementById('sb-fire').addEventListener('click', fireLaser);
+
+            function loop() {
+                if (resolved) return;
+
+                ctx.fillStyle = '#050814';
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.fillStyle = '#FFFFFF';
+                stars.forEach(function(st) {
+                    st.y += 0.6;
+                    if (st.y > H) st.y = 0;
+                    ctx.fillRect(st.x, st.y, st.s, st.s);
+                });
+
+                if (keys.left) ship.x = Math.max(30, ship.x - ship.speed);
+                if (keys.right) ship.x = Math.min(W - 30, ship.x + ship.speed);
+
+                ufos.forEach(function(u) {
+                    u.phase += 0.035;
+                    u.y = 66 + Math.sin(u.phase) * 14;
+
+                    ctx.fillStyle = '#38BDF8';
+                    ctx.beginPath();
+                    ctx.arc(u.x, u.y - 24, 18, Math.PI, 0);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#7C3AED';
+                    ctx.beginPath();
+                    ctx.roundRect(u.x - u.w / 2, u.y - u.h / 2, u.w, u.h, 16);
+                    ctx.fill();
+                    ctx.strokeStyle = '#A78BFA';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    drawWrappedLabel(ctx, u.text, u.x, u.y, u.w - 12, 11.5);
+                });
+
+                for (let i = lasers.length - 1; i >= 0; i--) {
+                    const l = lasers[i];
+                    l.y += l.vy;
+                    ctx.fillStyle = '#34D399';
+                    ctx.fillRect(l.x - 3, l.y - 12, 6, 20);
+
+                    ufos.forEach(function(u) {
+                        if (
+                            l.x > u.x - u.w / 2 &&
+                            l.x < u.x + u.w / 2 &&
+                            l.y < u.y + u.h / 2 &&
+                            l.y > u.y - u.h / 2
+                        ) {
+                            resolved = true;
+                            checkAnswer(u.correct);
+                        }
+                    });
+
+                    if (l.y < -20) lasers.splice(i, 1);
+                }
+
+                ctx.fillStyle = '#F59E0B';
+                ctx.beginPath();
+                ctx.moveTo(ship.x, ship.y - 20);
+                ctx.lineTo(ship.x + 22, ship.y + 14);
+                ctx.lineTo(ship.x, ship.y + 6);
+                ctx.lineTo(ship.x - 22, ship.y + 14);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#38BDF8';
+                ctx.beginPath();
+                ctx.arc(ship.x, ship.y - 2, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                activeAnimFrame = requestAnimationFrame(loop);
+            }
+
+            activeAnimFrame = requestAnimationFrame(loop);
+        }
+
+        /* ------------------------------------------
+           GAME 5: MONSTER BATTLE
+           ------------------------------------------ */
+        function launchMonsterBattleGame(options, area) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arcade-wrapper';
+            area.appendChild(wrapper);
+
+            const setup = setupResponsiveCanvas(wrapper);
+            const canvas = setup.canvas;
+            const ctx = setup.ctx;
+            const W = canvas.width;
+            const H = canvas.height;
+            const isCompact = W < 540;
+
+            let tick = 0;
+            let resolved = false;
+            let projectile = null;
+            let hitFlash = 0;
+
+            const hero = { x: isCompact ? 68 : 110, y: H * 0.44 };
+            const monster = { x: W - (isCompact ? 78 : 125), y: H * 0.42 };
+
+            const btnCols = 2;
+            const btnGap = 10;
+            const panelTop = H * 0.64;
+            const panelH = H - panelTop - 10;
+            const btnW = (W - 30 - btnGap) / btnCols;
+            const btnH = (panelH - btnGap) / 2;
+
+            const actionCards = options.map(function(opt, idx) {
+                const col = idx % 2;
+                const row = Math.floor(idx / 2);
+                return {
+                    x: 15 + col * (btnW + btnGap),
+                    y: panelTop + row * (btnH + btnGap),
+                    w: btnW,
+                    h: btnH,
+                    text: opt.text,
+                    correct: opt.correct,
+                    color: ['#EF4444', '#3B82F6', '#F59E0B', '#10B981'][idx % 4]
+                };
+            });
+
+            function triggerAttack(card) {
+                if (resolved || projectile) return;
+                projectile = {
+                    x: hero.x + 28,
+                    y: hero.y,
+                    targetX: monster.x - 24,
+                    targetY: monster.y,
+                    color: card.color,
+                    correct: card.correct
+                };
+            }
+
+            canvas.addEventListener('pointerdown', function(e) {
+                if (resolved || projectile) return;
+                const rect = canvas.getBoundingClientRect();
+                const px = (e.clientX - rect.left) * (W / rect.width);
+                const py = (e.clientY - rect.top) * (H / rect.height);
+
+                actionCards.forEach(function(c) {
+                    if (px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.h) {
+                        triggerAttack(c);
+                    }
+                });
+            });
+
+            const ctrlBar = document.createElement('div');
+            ctrlBar.className = 'arcade-controls-bar';
+            ctrlBar.innerHTML = '<span class="arcade-hint">Ketik kad kuasa serangan dengan jawapan tepat untuk menewaskan Raksasa Bahasa!</span>';
+            wrapper.appendChild(ctrlBar);
+
+            function loop() {
+                if (resolved) return;
+                tick += 0.06;
+
+                const bg = ctx.createLinearGradient(0, 0, 0, H);
+                bg.addColorStop(0, '#1E1B4B');
+                bg.addColorStop(0.65, '#4C1D95');
+                bg.addColorStop(1, '#0F172A');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.fillStyle = '#312E81';
+                ctx.beginPath();
+                ctx.ellipse(hero.x, hero.y + 42, 46, 12, 0, 0, Math.PI * 2);
+                ctx.ellipse(monster.x, monster.y + 48, 56, 14, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                const heroBob = Math.sin(tick * 1.5) * 4;
+                ctx.fillStyle = '#38BDF8';
+                ctx.beginPath();
+                ctx.arc(hero.x, hero.y + heroBob, 24, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.strokeStyle = '#FDE047';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(hero.x + 18, hero.y + 6 + heroBob);
+                ctx.lineTo(hero.x + 42, hero.y - 20 + heroBob);
+                ctx.stroke();
+
+                const monBob = Math.cos(tick * 1.3) * 5;
+                ctx.fillStyle = hitFlash > 0 ? '#FFFFFF' : '#DC2626';
+                if (hitFlash > 0) hitFlash--;
+                ctx.beginPath();
+                ctx.roundRect(monster.x - 32, monster.y - 32 + monBob, 64, 64, 18);
+                ctx.fill();
+                ctx.strokeStyle = '#FCA5A5';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#FACC15';
+                ctx.beginPath();
+                ctx.moveTo(monster.x - 24, monster.y - 32 + monBob);
+                ctx.lineTo(monster.x - 34, monster.y - 48 + monBob);
+                ctx.lineTo(monster.x - 10, monster.y - 32 + monBob);
+                ctx.moveTo(monster.x + 24, monster.y - 32 + monBob);
+                ctx.lineTo(monster.x + 34, monster.y - 48 + monBob);
+                ctx.lineTo(monster.x + 10, monster.y - 32 + monBob);
+                ctx.fill();
+
+                ctx.fillStyle = '#FEF08A';
+                ctx.beginPath();
+                ctx.arc(monster.x - 12, monster.y - 6 + monBob, 6, 0, Math.PI * 2);
+                ctx.arc(monster.x + 12, monster.y - 6 + monBob, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (projectile) {
+                    projectile.x += (projectile.targetX - projectile.x) * 0.22;
+                    projectile.y += (projectile.targetY - projectile.y) * 0.22;
+
+                    ctx.fillStyle = projectile.color;
+                    ctx.beginPath();
+                    ctx.arc(projectile.x, projectile.y, 14, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    if (Math.hypot(projectile.targetX - projectile.x, projectile.targetY - projectile.y) < 16) {
+                        hitFlash = 6;
+                        const isRight = projectile.correct;
+                        projectile = null;
+                        resolved = true;
+                        checkAnswer(isRight);
+                    }
+                }
+
+                actionCards.forEach(function(c) {
+                    ctx.fillStyle = c.color;
+                    ctx.beginPath();
+                    ctx.roundRect(c.x, c.y, c.w, c.h, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    drawWrappedLabel(ctx, '⚔️ ' + c.text, c.x + c.w / 2, c.y + c.h / 2, c.w - 14, isCompact ? 11 : 12.5);
+                });
+
+                activeAnimFrame = requestAnimationFrame(loop);
+            }
+
+            activeAnimFrame = requestAnimationFrame(loop);
+        }
+
+        /* ------------------------------------------
+           GAME 6: SPEED RUNNER
+           ------------------------------------------ */
+        function launchSpeedRunnerGame(options, area) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arcade-wrapper';
+            area.appendChild(wrapper);
+
+            const setup = setupResponsiveCanvas(wrapper);
+            const canvas = setup.canvas;
+            const ctx = setup.ctx;
+            const W = canvas.width;
+            const H = canvas.height;
+            const isCompact = W < 540;
+
+            const laneCount = options.length;
+            const laneH = (H - 24) / laneCount;
+            let currentLane = Math.floor(laneCount / 2);
+            const runnerX = isCompact ? 62 : 95;
+            let gateX = W - (isCompact ? 95 : 130);
+            const gateW = isCompact ? 145 : 195;
+            let roadOffset = 0;
+            let resolved = false;
+            let started = false;
+
+            const gates = options.map(function(opt, idx) {
+                return {
+                    lane: idx,
+                    y: 12 + idx * laneH + laneH / 2,
+                    h: laneH - 8,
+                    text: opt.text,
+                    correct: opt.correct
+                };
+            });
+
+            function moveLane(delta) {
+                if (resolved) return;
+                started = true;
+                currentLane = Math.max(0, Math.min(laneCount - 1, currentLane + delta));
+            }
+
+            activeKeyHandler = function(e) {
+                if (e.key === 'ArrowUp' || e.key === 'w') { e.preventDefault(); moveLane(-1); }
+                if (e.key === 'ArrowDown' || e.key === 's') { e.preventDefault(); moveLane(1); }
+                if (e.key === ' ') { e.preventDefault(); started = true; }
+            };
+            window.addEventListener('keydown', activeKeyHandler);
+
+            canvas.addEventListener('pointerdown', function(e) {
+                if (resolved) return;
+                started = true;
+                const rect = canvas.getBoundingClientRect();
+                const py = (e.clientY - rect.top) * (H / rect.height);
+                const tappedLane = Math.floor((py - 12) / laneH);
+                if (tappedLane >= 0 && tappedLane < laneCount) {
+                    currentLane = tappedLane;
+                }
+            });
+
+            const ctrlBar = document.createElement('div');
+            ctrlBar.className = 'arcade-controls-bar';
+            ctrlBar.innerHTML =
+                '<button type="button" class="dpad-btn" id="sr-up"><i class="fa-solid fa-arrow-up"></i> Lorong Atas</button>' +
+                '<button type="button" class="dpad-btn" id="sr-down"><i class="fa-solid fa-arrow-down"></i> Lorong Bawah</button>' +
+                '<span class="arcade-hint">Ketik lorong jawapan yang tepat untuk memecut melepasi garisan penamat!</span>';
+            wrapper.appendChild(ctrlBar);
+
+            document.getElementById('sr-up').addEventListener('click', function() { moveLane(-1); });
+            document.getElementById('sr-down').addEventListener('click', function() { moveLane(1); });
+
+            function loop() {
+                if (resolved) return;
+
+                ctx.fillStyle = '#1E293B';
+                ctx.fillRect(0, 0, W, H);
+
+                if (started) {
+                    roadOffset = (roadOffset + 4) % 40;
+                    gateX -= isCompact ? 1.1 : 1.45;
+                }
+
+                for (let i = 0; i <= laneCount; i++) {
+                    const ly = 12 + i * laneH;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+                    ctx.setLineDash([18, 18]);
+                    ctx.lineDashOffset = roadOffset;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, ly);
+                    ctx.lineTo(W, ly);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+
+                gates.forEach(function(g) {
+                    const isSelectedLane = g.lane === currentLane;
+                    ctx.fillStyle = isSelectedLane ? '#0284C7' : '#334155';
+                    ctx.beginPath();
+                    ctx.roundRect(gateX - gateW / 2, g.y - g.h / 2, gateW, g.h, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = isSelectedLane ? '#FDE047' : '#94A3B8';
+                    ctx.lineWidth = isSelectedLane ? 3 : 1.5;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    drawWrappedLabel(ctx, g.text, gateX, g.y, gateW - 14, isCompact ? 11 : 12.5);
+
+                    if (started && gateX - gateW / 2 <= runnerX + 18 && g.lane === currentLane) {
+                        resolved = true;
+                        checkAnswer(g.correct);
+                    }
+                });
+
+                if (started && gateX < -gateW) {
+                    gateX = W + 60;
+                }
+
+                const ry = 12 + currentLane * laneH + laneH / 2;
+                ctx.fillStyle = '#F59E0B';
+                ctx.beginPath();
+                ctx.arc(runnerX, ry, 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.strokeStyle = '#38BDF8';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(runnerX - 24, ry - 6);
+                ctx.lineTo(runnerX - 42, ry - 6);
+                ctx.moveTo(runnerX - 22, ry + 6);
+                ctx.lineTo(runnerX - 38, ry + 6);
+                ctx.stroke();
+
+                if (!started) {
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                    ctx.beginPath();
+                    ctx.roundRect(runnerX + 26, H / 2 - 20, Math.min(250, W * 0.52), 40, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = '#FDE047';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FDE047';
+                    ctx.font = '800 12px Nunito, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⚡ Ketik lorong jawapan untuk memecut!', runnerX + 26 + Math.min(250, W * 0.52) / 2, H / 2);
+                }
+
+                activeAnimFrame = requestAnimationFrame(loop);
+            }
+
+            activeAnimFrame = requestAnimationFrame(loop);
+        }
+
+        /* ------------------------------------------
+           GAME 7: TETRIS
+           ------------------------------------------ */
+        function launchTetrisGame(options, area) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arcade-wrapper';
+            area.appendChild(wrapper);
+
+            const setup = setupResponsiveCanvas(wrapper);
+            const canvas = setup.canvas;
+            const ctx = setup.ctx;
+            const W = canvas.width;
+            const H = canvas.height;
+            const isCompact = W < 540;
+
+            const cols = options.length;
+            const colW = (W - 24) / cols;
+            let activeCol = 0;
+            let blockY = 34;
+            const blockH = 42;
+            const wellBottom = H - 64;
+            let resolved = false;
+            let falling = false;
+
+            const slots = options.map(function(opt, idx) {
+                return {
+                    col: idx,
+                    x: 12 + idx * colW,
+                    w: colW - 6,
+                    text: opt.text,
+                    correct: opt.correct,
+                    color: ['#EC4899', '#8B5CF6', '#06B6D4', '#F59E0B'][idx % 4]
+                };
+            });
+
+            function shiftCol(dir) {
+                if (resolved) return;
+                falling = true;
+                activeCol = (activeCol + dir + cols) % cols;
+            }
+
+            function hardDrop() {
+                if (resolved) return;
+                falling = true;
+                blockY = wellBottom - blockH;
+            }
+
+            activeKeyHandler = function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'a') { e.preventDefault(); shiftCol(-1); }
+                if (e.key === 'ArrowRight' || e.key === 'd') { e.preventDefault(); shiftCol(1); }
+                if (e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); hardDrop(); }
+            };
+            window.addEventListener('keydown', activeKeyHandler);
+
+            canvas.addEventListener('pointerdown', function(e) {
+                if (resolved) return;
+                const rect = canvas.getBoundingClientRect();
+                const px = (e.clientX - rect.left) * (W / rect.width);
+                const clickedCol = Math.floor((px - 12) / colW);
+                if (clickedCol >= 0 && clickedCol < cols) {
+                    activeCol = clickedCol;
+                    hardDrop();
+                }
+            });
+
+            const ctrlBar = document.createElement('div');
+            ctrlBar.className = 'arcade-controls-bar';
+            ctrlBar.innerHTML =
+                '<button type="button" class="dpad-btn" id="tt-left"><i class="fa-solid fa-arrow-left"></i> Kiri</button>' +
+                '<button type="button" class="dpad-btn fire" id="tt-drop"><i class="fa-solid fa-angles-down"></i> JATUHKAN BLOK</button>' +
+                '<button type="button" class="dpad-btn" id="tt-right">Kanan <i class="fa-solid fa-arrow-right"></i></button>' +
+                '<span class="arcade-hint">Jatuhkan blok Tetromino ke dalam ruang jawapan yang betul!</span>';
+            wrapper.appendChild(ctrlBar);
+
+            document.getElementById('tt-left').addEventListener('click', function() { shiftCol(-1); });
+            document.getElementById('tt-right').addEventListener('click', function() { shiftCol(1); });
+            document.getElementById('tt-drop').addEventListener('click', hardDrop);
+
+            function loop() {
+                if (resolved) return;
+
+                ctx.fillStyle = '#0F172A';
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+                ctx.lineWidth = 1;
+                for (let gx = 12; gx <= W - 12; gx += 28) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                }
+                for (let gy = 0; gy <= H; gy += 28) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+                }
+
+                slots.forEach(function(s) {
+                    const isHover = s.col === activeCol;
+                    ctx.fillStyle = isHover ? '#1E293B' : '#111827';
+                    ctx.beginPath();
+                    ctx.roundRect(s.x + 3, wellBottom, s.w, 54, 10);
+                    ctx.fill();
+                    ctx.strokeStyle = isHover ? '#FDE047' : s.color;
+                    ctx.lineWidth = isHover ? 3 : 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    drawWrappedLabel(ctx, s.text, s.x + 3 + s.w / 2, wellBottom + 27, s.w - 10, isCompact ? 10.5 : 12);
+                });
+
+                if (falling) {
+                    blockY += 0.85;
+                }
+
+                const curSlot = slots[activeCol];
+                const bx = curSlot.x + 3;
+                const bw = curSlot.w;
+
+                ctx.strokeStyle = 'rgba(253, 224, 71, 0.35)';
+                ctx.setLineDash([6, 6]);
+                ctx.strokeRect(bx + 4, blockY + blockH, bw - 8, wellBottom - (blockY + blockH));
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = '#FACC15';
+                ctx.beginPath();
+                ctx.roundRect(bx + 4, blockY, bw - 8, blockH, 10);
+                ctx.fill();
+                ctx.strokeStyle = '#FEF08A';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#1E293B';
+                ctx.font = '800 12px Nunito, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('BLOK JAWAPAN', bx + bw / 2, blockY + blockH / 2);
+
+                if (blockY + blockH >= wellBottom) {
+                    resolved = true;
+                    checkAnswer(curSlot.correct);
+                }
+
+                activeAnimFrame = requestAnimationFrame(loop);
+            }
+
+            activeAnimFrame = requestAnimationFrame(loop);
+        }
+
+        /* ------------------------------------------
+           GAME 8: SUPER JUMPER
+           ------------------------------------------ */
+        function launchSuperJumperGame(options, area) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arcade-wrapper';
+            area.appendChild(wrapper);
+
+            const setup = setupResponsiveCanvas(wrapper);
+            const canvas = setup.canvas;
+            const ctx = setup.ctx;
+            const W = canvas.width;
+            const H = canvas.height;
+            const isCompact = W < 540;
+
+            const groundY = H - 34;
+            const player = { x: W / 2, y: groundY - 18, vx: 0, vy: 0, r: 17, grounded: true };
+            const gravity = 0.45;
+            const keys = { left: false, right: false };
+
+            const platCols = options.length;
+            const platZoneW = (W - 24) / platCols;
+            const platforms = options.map(function(opt, idx) {
+                return {
+                    x: 12 + idx * platZoneW + 6,
+                    y: H * 0.42 + (idx % 2 === 0 ? -12 : 14),
+                    w: platZoneW - 12,
+                    h: 52,
+                    text: opt.text,
+                    correct: opt.correct
+                };
+            });
+
+            let resolved = false;
+
+            function jump() {
+                if (resolved) return;
+                if (player.grounded) {
+                    player.vy = -12.2;
+                    player.grounded = false;
+                }
+            }
+
+            activeKeyHandler = function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+                if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') {
+                    e.preventDefault();
+                    jump();
+                }
+            };
+            activeKeyUpHandler = function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            };
+            window.addEventListener('keydown', activeKeyHandler);
+            window.addEventListener('keyup', activeKeyUpHandler);
+
+            canvas.addEventListener('pointerdown', function(e) {
+                if (resolved) return;
+                const rect = canvas.getBoundingClientRect();
+                const px = (e.clientX - rect.left) * (W / rect.width);
+                player.x = Math.max(24, Math.min(W - 24, px));
+                player.vy = -12.2;
+                player.grounded = false;
+            });
+
+            const ctrlBar = document.createElement('div');
+            ctrlBar.className = 'arcade-controls-bar';
+            ctrlBar.innerHTML =
+                '<button type="button" class="dpad-btn" id="sj-left"><i class="fa-solid fa-arrow-left"></i> Kiri</button>' +
+                '<button type="button" class="dpad-btn fire" id="sj-jump"><i class="fa-solid fa-up-long"></i> LOMPAT (SPACE)</button>' +
+                '<button type="button" class="dpad-btn" id="sj-right">Kanan <i class="fa-solid fa-arrow-right"></i></button>' +
+                '<span class="arcade-hint">Lompat dan tanduk blok jawapan yang tepat!</span>';
+            wrapper.appendChild(ctrlBar);
+
+            document.getElementById('sj-left').addEventListener('click', function() {
+                player.x = Math.max(24, player.x - 50);
+            });
+            document.getElementById('sj-right').addEventListener('click', function() {
+                player.x = Math.min(W - 24, player.x + 50);
+            });
+            document.getElementById('sj-jump').addEventListener('click', jump);
+
+            function loop() {
+                if (resolved) return;
+
+                const sky = ctx.createLinearGradient(0, 0, 0, H);
+                sky.addColorStop(0, '#2563EB');
+                sky.addColorStop(1, '#93C5FD');
+                ctx.fillStyle = sky;
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.fillStyle = '#16A34A';
+                ctx.fillRect(0, groundY, W, H - groundY);
+                ctx.fillStyle = '#15803D';
+                ctx.fillRect(0, groundY + 8, W, H - groundY - 8);
+
+                if (keys.left) player.x = Math.max(24, player.x - 5.5);
+                if (keys.right) player.x = Math.min(W - 24, player.x + 5.5);
+
+                player.vy += gravity;
+                player.y += player.vy;
+
+                if (player.y >= groundY - player.r) {
+                    player.y = groundY - player.r;
+                    player.vy = 0;
+                    player.grounded = true;
+                }
+
+                platforms.forEach(function(p) {
+                    ctx.fillStyle = '#D97706';
+                    ctx.beginPath();
+                    ctx.roundRect(p.x, p.y, p.w, p.h, 12);
+                    ctx.fill();
+                    ctx.strokeStyle = '#FEF08A';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    drawWrappedLabel(ctx, p.text, p.x + p.w / 2, p.y + p.h / 2, p.w - 10, isCompact ? 10.5 : 12);
+
+                    if (
+                        player.x + player.r > p.x &&
+                        player.x - player.r < p.x + p.w &&
+                        player.y - player.r < p.y + p.h &&
+                        player.y + player.r > p.y
+                    ) {
+                        resolved = true;
+                        checkAnswer(p.correct);
+                    }
+                });
+
+                ctx.fillStyle = '#EF4444';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                ctx.fillStyle = '#B91C1C';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y - 6, player.r - 2, Math.PI, 0);
+                ctx.fill();
+
+                activeAnimFrame = requestAnimationFrame(loop);
+            }
+
+            activeAnimFrame = requestAnimationFrame(loop);
+        }
+
+        /* ==========================================
+           5. SEMAKAN JAWAPAN & SINKRONISASI LIVE
+           ========================================== */
+        let isAnswering = false;
+        function checkAnswer(isCorrect) {
+            if (isAnswering) return;
+            isAnswering = true;
+            stopActiveGameLoop();
+
+            const banner = document.getElementById('feedback-banner');
+            if (isCorrect) {
+                banner.textContent = "Tahniah! Jawapan Tepat! (+100 Mata) 🎉";
+                banner.className = "feedback-banner correct";
+                score += 100;
+                phaseScore += 10;
+                streak++;
+            } else {
+                banner.textContent = "Kurang tepat! Cuba lagi pada soalan seterusnya! 💡";
+                banner.className = "feedback-banner wrong";
+                streak = 0;
+            }
+            updateStats();
+
+            const mod = getModuleById(currentModuleId);
+            syncPlayerProgressToLive('Misi ' + (currentQuestionIndex + 1) + ' • ' + (mod ? mod.title : ''));
+
+            setTimeout(function() {
+                isAnswering = false;
+                currentQuestionIndex++;
+                loadQuestion();
+            }, 1050);
+        }
+
+        function hideFeedback() {
+            const banner = document.getElementById('feedback-banner');
+            banner.style.display = 'none';
+            banner.className = 'feedback-banner';
+        }
+
+        function updateStats() {
+            document.getElementById('score-val').textContent = score;
+            document.getElementById('streak-val').textContent = streak;
+        }
+
+        function finishPhase() {
+            stopActiveGameLoop();
+            document.getElementById('progress-fill').style.width = '100%';
+            
+            const mod = getModuleById(currentModuleId);
+            const totalQuestions = mod.phases[currentPhase].length;
+            const maxPhaseScore = totalQuestions * 10;
+            const percentage = maxPhaseScore > 0 ? Math.round((phaseScore / maxPhaseScore) * 100) : 0;
+            
+            const passed = percentage >= 70;
+            const totalPhasesInMod = mod.phases.length;
+
+            if (passed) {
+                const nextPhaseLevel = currentPhase + 2;
+                const currentUnlocked = currentUser.unlockedPhases[currentModuleId] || 1;
+                
+                if (nextPhaseLevel > currentUnlocked) {
+                    currentUser.unlockedPhases[currentModuleId] = Math.min(totalPhasesInMod, nextPhaseLevel);
+                    saveUserData();
+                }
+            }
+
+            syncPlayerProgressToLive('Tamat Fasa ' + (currentPhase + 1) + ' (' + percentage + '%)');
+
+            document.getElementById('final-score').textContent = percentage + '%';
+            
+            const titleEl = document.getElementById('result-title');
+            const msgEl = document.getElementById('result-message');
+
+            if (passed) {
+                titleEl.textContent = "Tahniah, Misi Berjaya! 🎉";
+                titleEl.style.color = "#FDE047";
+                if (currentPhase + 1 < totalPhasesInMod) {
+                    msgEl.textContent = "Syabas " + currentUser.name + "! Anda mendapat " + percentage + "% dan berjaya membuka Fasa " + (currentPhase + 2) + "!";
+                } else {
+                    msgEl.textContent = "Hebat! Anda menamatkan semua fasa dalam " + mod.title + " dengan markah " + percentage + "%!";
+                }
+            } else {
+                titleEl.textContent = "Cuba Lagi! 💡";
+                titleEl.style.color = "#EF4444";
+                msgEl.textContent = "Markah anda (" + percentage + "%) belum mencapai minimum 70%. Cuba lagi untuk menyahkunci fasa seterusnya!";
+            }
+
+            showScreen('screen-result');
+        }
+
+        /* ==========================================
+           6. PANEL ADMIN & LIVE LEADERBOARD
+           ========================================== */
+        const authorizedAdmins = [
+            { username: 'NQA', password: 'nqa123' },
+            { username: 'MFR', password: 'mfr123' }
+        ];
+        let loggedInAdmin = sessionStorage.getItem('kembara_bm_admin_user') || null;
+
+        function openAdminPanel() {
+            stopActiveGameLoop();
+            if (!loggedInAdmin) {
+                document.getElementById('admin-login-username').value = '';
+                document.getElementById('admin-login-password').value = '';
+                showScreen('screen-admin-login');
+                return;
+            }
+            document.getElementById('active-admin-badge').textContent = loggedInAdmin;
+            populateAdminModuleDropdowns();
+            renderAdminModulesList();
+            renderAdminPhasesList();
+            renderAdminQuestionsList();
+            renderLiveLeaderboard();
+            showScreen('screen-admin');
+        }
+
+        function verifyAdminLogin() {
+            const usernameInput = document.getElementById('admin-login-username').value.trim();
+            const passwordInput = document.getElementById('admin-login-password').value;
+
+            const validAdmin = authorizedAdmins.find(function(admin) {
+                return admin.username.toUpperCase() === usernameInput.toUpperCase() && admin.password === passwordInput;
+            });
+
+            if (!validAdmin) {
+                showToast("Nama pengguna atau kata laluan Admin tidak sah!");
+                return;
+            }
+
+            loggedInAdmin = validAdmin.username;
+            sessionStorage.setItem('kembara_bm_admin_user', loggedInAdmin);
+            showToast("Selamat datang, Admin " + loggedInAdmin + "!");
+            openAdminPanel();
+        }
+
+        function logoutAdmin() {
+            loggedInAdmin = null;
+            sessionStorage.removeItem('kembara_bm_admin_user');
+            const board = document.getElementById('live-projector-container');
+            if (board) board.classList.remove('projector-fullscreen');
+            stopActiveGameLoop();
+            document.getElementById('main-header').style.display = 'none';
+            showToast("Anda telah log keluar daripada Admin Panel.");
+            showScreen('screen-auth');
+        }
+
+        function exitAdminPanel() {
+            const board = document.getElementById('live-projector-container');
+            if (board) board.classList.remove('projector-fullscreen');
+            renderModuleMenu();
+            if (currentUser && currentUser.registered) {
+                document.getElementById('main-header').style.display = 'flex';
+                showScreen('screen-menu');
+            } else {
+                document.getElementById('main-header').style.display = 'none';
+                showScreen('screen-auth');
+            }
+        }
+
+        function switchAdminTab(tabName, btnEl) {
+            document.querySelectorAll('.admin-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            btnEl.classList.add('active');
+
+            document.querySelectorAll('.admin-section').forEach(function(s) { s.classList.remove('active'); });
+            document.getElementById('admin-tab-' + tabName).classList.add('active');
+            if (tabName === 'live') renderLiveLeaderboard();
+        }
+
+        function toggleProjectorMode() {
+            const board = document.getElementById('live-projector-container');
+            const btn = document.getElementById('btn-toggle-projector');
+            board.classList.toggle('projector-fullscreen');
+            if (board.classList.contains('projector-fullscreen')) {
+                btn.innerHTML = '<i class="fa-solid fa-compress"></i> Keluar Skrin Penuh';
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-expand"></i> Mod Projektor';
+            }
+        }
+
+        async function clearLiveSession() {
+            livePlayersMap = {};
+            localStorage.removeItem('kembara_bm_t6_live_players');
+            renderLiveLeaderboard();
+
+            if (db) {
+                try {
+                    const snap = await db.collection("kembara_bm_t6_live_players").get();
+                    const batch = db.batch();
+                    snap.forEach(function(doc) { batch.delete(doc.ref); });
+                    await batch.commit();
+                } catch (e) {}
+            }
+            showToast("Sesi papan pendahulu telah dikosongkan!");
+        }
+
+        function renderLiveLeaderboard() {
+            const listEl = document.getElementById('live-leaderboard-list');
+            const countEl = document.getElementById('live-player-count');
+            if (!listEl) return;
+
+            const players = Object.values(livePlayersMap).sort(function(a, b) {
+                return (b.score || 0) - (a.score || 0);
+            });
+            if (countEl) countEl.textContent = players.length;
+
+            if (players.length === 0) {
+                listEl.innerHTML =
+                    '<div style="text-align:center; padding: 36px 16px; color: #94A3B8; font-weight: 700;">' +
+                        '<i class="fa-solid fa-satellite-dish" style="font-size: 2.5rem; margin-bottom: 10px; color: #6366F1;"></i><br>' +
+                        'Menunggu murid menyertai arena permainan...<br>' +
+                        '<span style="font-size: 0.85rem;">Sebarang markah murid akan dipancarkan secara automatik di sini!</span>' +
+                    '</div>';
+                return;
+            }
+
+            const topScore = Math.max(100, players[0].score || 100);
+            listEl.innerHTML = '';
+
+            players.forEach(function(p, idx) {
+                const rank = idx + 1;
+                const rankClass = rank <= 3 ? 'rank-' + rank : '';
+                const pct = Math.min(100, Math.round(((p.score || 0) / topScore) * 100));
+
+                const row = document.createElement('div');
+                row.className = 'leaderboard-row ' + rankClass;
+                row.innerHTML =
+                    '<div class="rank-medal">' + (rank === 1 ? '👑' : rank) + '</div>' +
+                    '<div class="avatar-circle" style="width:40px; height:40px; font-size:1.1rem; flex-shrink:0;">' +
+                        '<i class="fa-solid ' + (p.avatar || 'fa-user-astronaut') + '"></i>' +
+                    '</div>' +
+                    '<div style="flex:1; min-width:140px;">' +
+                        '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">' +
+                            '<strong style="font-size:1.05rem;">' + p.name + ' <span style="font-size:0.75rem; color:#93C5FD;">(' + (p.className || 'Tahun 6') + ')</span></strong>' +
+                            '<span style="font-size:0.78rem; background:rgba(255,255,255,0.14); padding:2px 10px; border-radius:10px; color:#FDE047;">' +
+                                (p.statusText || 'Aktif') +
+                            '</span>' +
+                        '</div>' +
+                        '<div class="lb-progress-track">' +
+                            '<div class="lb-progress-fill" style="width: ' + pct + '%;"></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div style="text-align:right; flex-shrink:0;">' +
+                        '<div style="font-family:\'Fredoka One\'; font-size:1.35rem; color:#FDE047;">' + (p.score || 0) + '</div>' +
+                        '<div style="font-size:0.72rem; color:#FCA5A5; font-weight:800;"><i class="fa-solid fa-fire"></i> Streak: ' + (p.streak || 0) + '</div>' +
+                    '</div>';
+                listEl.appendChild(row);
+            });
+        }
+
+        function populateAdminModuleDropdowns() {
+            const qModSelect = document.getElementById('admin-q-module');
+            const pModSelect = document.getElementById('admin-p-module');
+            const prevQMod = qModSelect.value;
+            const prevPMod = pModSelect.value;
+
+            qModSelect.innerHTML = '';
+            pModSelect.innerHTML = '';
+
+            gameDatabase.modules.forEach(function(mod) {
+                const opt1 = document.createElement('option');
+                opt1.value = mod.id;
+                opt1.textContent = mod.title;
+                qModSelect.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = mod.id;
+                opt2.textContent = mod.title;
+                pModSelect.appendChild(opt2);
+            });
+
+            if (prevQMod && gameDatabase.modules.some(function(m) { return m.id === prevQMod; })) qModSelect.value = prevQMod;
+            if (prevPMod && gameDatabase.modules.some(function(m) { return m.id === prevPMod; })) pModSelect.value = prevPMod;
+
+            populateAdminPhaseDropdown();
+        }
+
+        function onAdminModuleChange() {
+            resetQuestionForm();
+            populateAdminPhaseDropdown();
+            renderAdminQuestionsList();
+        }
+
+        function populateAdminPhaseDropdown() {
+            const modId = document.getElementById('admin-q-module').value;
+            const mod = getModuleById(modId);
+            const phaseSelect = document.getElementById('admin-q-phase');
+            const prevPhase = phaseSelect.value;
+
+            phaseSelect.innerHTML = '';
+            if (!mod) return;
+
+            mod.phases.forEach(function(_, idx) {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = 'Fasa ' + (idx + 1);
+                phaseSelect.appendChild(opt);
+            });
+
+            if (prevPhase !== '' && Number(prevPhase) < mod.phases.length) {
+                phaseSelect.value = prevPhase;
+            }
+        }
+
+        function renderAdminQuestionsList() {
+            const modId = document.getElementById('admin-q-module').value;
+            const phaseIdx = Number(document.getElementById('admin-q-phase').value) || 0;
+            const mod = getModuleById(modId);
+            const listEl = document.getElementById('admin-q-list');
+            listEl.innerHTML = '';
+
+            if (!mod || !mod.phases[phaseIdx]) {
+                document.getElementById('admin-q-count').textContent = '0';
+                return;
+            }
+
+            const questions = mod.phases[phaseIdx];
+            document.getElementById('admin-q-count').textContent = questions.length;
+
+            questions.forEach(function(q, idx) {
+                const item = document.createElement('div');
+                item.className = 'admin-item-card';
+                const opts = normalizeQuestionOptions(q);
+                const correctOpt = opts.find(function(o) { return o.correct; });
+
+                item.innerHTML =
+                    '<div class="admin-item-info">' +
+                        '<span class="admin-badge">#' + (idx + 1) + ' • ' + (mod.gameLabel || 'Permainan') + '</span>' +
+                        '<div style="font-weight: 800; font-size: 0.95rem;">' + q.question + '</div>' +
+                        '<div style="font-size: 0.8rem; color: #10B981; font-weight: 700; margin-top: 2px;">Jawapan Tepat: ' + (correctOpt ? correctOpt.text : '-') + '</div>' +
+                    '</div>' +
+                    '<div class="admin-actions">' +
+                        '<button type="button" class="btn-sm btn-edit" data-idx="' + idx + '"><i class="fa-solid fa-pen"></i> Edit</button>' +
+                        '<button type="button" class="btn-sm btn-delete" data-idx="' + idx + '"><i class="fa-solid fa-trash"></i></button>' +
+                    '</div>';
+
+                item.querySelector('.btn-edit').addEventListener('click', function() { editAdminQuestion(idx); });
+                item.querySelector('.btn-delete').addEventListener('click', function() { deleteAdminQuestion(idx); });
+                listEl.appendChild(item);
+            });
+        }
+
+        async function saveAdminQuestion() {
+            const modId = document.getElementById('admin-q-module').value;
+            const phaseIdx = Number(document.getElementById('admin-q-phase').value) || 0;
+            const editIdx = Number(document.getElementById('admin-q-edit-index').value);
+            const qText = document.getElementById('admin-q-text').value.trim();
+            const correct = document.getElementById('mcq-correct').value.trim();
+            const w1 = document.getElementById('mcq-wrong1').value.trim();
+            const w2 = document.getElementById('mcq-wrong2').value.trim();
+            const w3 = document.getElementById('mcq-wrong3').value.trim();
+
+            if (!qText || !correct || !w1) {
+                showToast("Sila isi soalan, jawapan betul dan sekurang-kurangnya 1 pilihan salah!");
+                return;
+            }
+
+            const options = [{ text: correct, correct: true }];
+            if (w1) options.push({ text: w1, correct: false });
+            if (w2) options.push({ text: w2, correct: false });
+            if (w3) options.push({ text: w3, correct: false });
+
+            const newQuestionObj = { question: qText, options: options };
+            const mod = getModuleById(modId);
+
+            if (editIdx >= 0) {
+                mod.phases[phaseIdx][editIdx] = newQuestionObj;
+            } else {
+                mod.phases[phaseIdx].push(newQuestionObj);
+            }
+
+            await saveGameDatabase();
+            resetQuestionForm();
+            renderAdminQuestionsList();
+            renderAdminPhasesList();
+        }
+
+        function editAdminQuestion(idx) {
+            const modId = document.getElementById('admin-q-module').value;
+            const phaseIdx = Number(document.getElementById('admin-q-phase').value) || 0;
+            const mod = getModuleById(modId);
+            const q = mod.phases[phaseIdx][idx];
+            if (!q) return;
+
+            document.getElementById('admin-q-edit-index').value = idx;
+            document.getElementById('admin-q-form-title').textContent = 'Edit Soalan #' + (idx + 1);
+            document.getElementById('admin-q-cancel-btn').style.display = 'inline-block';
+            document.getElementById('admin-q-text').value = q.question;
+
+            const opts = normalizeQuestionOptions(q);
+            const correctOpt = opts.find(function(o) { return o.correct; });
+            const wrongOpts = opts.filter(function(o) { return !o.correct; });
+            document.getElementById('mcq-correct').value = correctOpt ? correctOpt.text : '';
+            document.getElementById('mcq-wrong1').value = wrongOpts[0] ? wrongOpts[0].text : '';
+            document.getElementById('mcq-wrong2').value = wrongOpts[1] ? wrongOpts[1].text : '';
+            document.getElementById('mcq-wrong3').value = wrongOpts[2] ? wrongOpts[2].text : '';
+        }
+
+        async function deleteAdminQuestion(idx) {
+            const modId = document.getElementById('admin-q-module').value;
+            const phaseIdx = Number(document.getElementById('admin-q-phase').value) || 0;
+            const mod = getModuleById(modId);
+            
+            mod.phases[phaseIdx].splice(idx, 1);
+            await saveGameDatabase();
+            renderAdminQuestionsList();
+            renderAdminPhasesList();
+        }
+
+        function resetQuestionForm() {
+            document.getElementById('admin-q-edit-index').value = '-1';
+            document.getElementById('admin-q-form-title').textContent = '+ Tambah Soalan Baharu';
+            document.getElementById('admin-q-cancel-btn').style.display = 'none';
+            document.getElementById('admin-q-text').value = '';
+            document.getElementById('mcq-correct').value = '';
+            document.getElementById('mcq-wrong1').value = '';
+            document.getElementById('mcq-wrong2').value = '';
+            document.getElementById('mcq-wrong3').value = '';
+        }
+
+        function renderAdminPhasesList() {
+            const modId = document.getElementById('admin-p-module').value;
+            const mod = getModuleById(modId);
+            const listEl = document.getElementById('admin-p-list');
+            listEl.innerHTML = '';
+            if (!mod) return;
+
+            mod.phases.forEach(function(phaseQuestions, idx) {
+                const item = document.createElement('div');
+                item.className = 'admin-item-card';
+                item.innerHTML =
+                    '<div class="admin-item-info">' +
+                        '<strong style="color:var(--primary);">Fasa ' + (idx + 1) + '</strong>' +
+                        '<span style="font-size:0.85rem; color:#64748B; margin-left:10px;">(' + phaseQuestions.length + ' soalan)</span>' +
+                    '</div>' +
+                    '<div class="admin-actions">' +
+                        (mod.phases.length > 1 ? '<button type="button" class="btn-sm btn-delete"><i class="fa-solid fa-trash"></i> Padam Fasa</button>' : '') +
+                    '</div>';
+                const delBtn = item.querySelector('.btn-delete');
+                if (delBtn) {
+                    delBtn.addEventListener('click', function() { deletePhaseFromModule(idx); });
+                }
+                listEl.appendChild(item);
+            });
+        }
+
+        async function addNewPhaseToModule() {
+            const modId = document.getElementById('admin-p-module').value;
+            const mod = getModuleById(modId);
+            if (!mod) return;
+
+            const newPhaseNum = mod.phases.length + 1;
+            mod.phases.push([
+                {
+                    question: '[Fasa ' + newPhaseNum + '] Contoh soalan Tahun 6 baharu. Sila kemaskini di tab Urus Soalan:',
+                    options: [
+                        { text: "Jawapan Betul", correct: true },
+                        { text: "Pilihan Salah 1", correct: false },
+                        { text: "Pilihan Salah 2", correct: false },
+                        { text: "Pilihan Salah 3", correct: false }
+                    ]
+                }
+            ]);
+
+            await saveGameDatabase();
+            populateAdminPhaseDropdown();
+            renderAdminPhasesList();
+            renderAdminModulesList();
+        }
+
+        async function deletePhaseFromModule(phaseIdx) {
+            const modId = document.getElementById('admin-p-module').value;
+            const mod = getModuleById(modId);
+            if (!mod || mod.phases.length <= 1) return;
+
+            mod.phases.splice(phaseIdx, 1);
+            await saveGameDatabase();
+            populateAdminPhaseDropdown();
+            renderAdminPhasesList();
+            renderAdminModulesList();
+        }
+
+        function renderAdminModulesList() {
+            const listEl = document.getElementById('admin-m-list');
+            listEl.innerHTML = '';
+
+            gameDatabase.modules.forEach(function(mod, idx) {
+                const meta = getGameTypeMeta(mod.gameType || 'pacman');
+                const item = document.createElement('div');
+                item.className = 'admin-item-card';
+                item.innerHTML =
+                    '<div class="admin-item-info" style="display:flex; align-items:center; gap:12px;">' +
+                        '<div class="menu-icon ' + mod.colorClass + '" style="width:40px; height:40px; font-size:1.1rem; background:var(--primary);">' +
+                            '<i class="fa-solid ' + (mod.icon || meta.icon) + '"></i>' +
+                        '</div>' +
+                        '<div>' +
+                            '<strong style="font-size:1rem;">' + mod.title + '</strong> <span class="admin-badge">' + meta.label + '</span>' +
+                            '<div style="font-size:0.8rem; color:#64748B;">' + mod.description + ' • <strong>' + mod.phases.length + ' Fasa</strong></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="admin-actions">' +
+                        (gameDatabase.modules.length > 1 ? '<button type="button" class="btn-sm btn-delete"><i class="fa-solid fa-trash"></i> Padam</button>' : '') +
+                    '</div>';
+                const delBtn = item.querySelector('.btn-delete');
+                if (delBtn) {
+                    delBtn.addEventListener('click', function() { deleteModule(idx); });
+                }
+                listEl.appendChild(item);
+            });
+        }
+
+        async function addNewModule() {
+            const title = document.getElementById('new-mod-title').value.trim();
+            const gameType = document.getElementById('new-mod-gametype').value;
+            const desc = document.getElementById('new-mod-desc').value.trim() || 'Modul Pembelajaran Tahun 6';
+            const colorClass = document.getElementById('new-mod-color').value;
+            const meta = getGameTypeMeta(gameType);
+
+            if (!title) {
+                showToast("Sila masukkan nama modul baharu!");
+                return;
+            }
+
+            const newId = 'mod_' + Date.now();
+            gameDatabase.modules.push({
+                id: newId,
+                title: title,
+                gameType: gameType,
+                gameLabel: meta.label,
+                description: desc,
+                icon: meta.icon,
+                colorClass: colorClass,
+                phases: [
+                    [
+                        {
+                            question: 'Selamat datang ke ' + title + '! Contoh soalan Fasa 1:',
+                            options: [
+                                { text: "Jawapan Tepat", correct: true },
+                                { text: "Pilihan Salah A", correct: false },
+                                { text: "Pilihan Salah B", correct: false },
+                                { text: "Pilihan Salah C", correct: false }
+                            ]
+                        }
+                    ]
+                ]
+            });
+
+            document.getElementById('new-mod-title').value = '';
+            document.getElementById('new-mod-desc').value = '';
+
+            await saveGameDatabase();
+            populateAdminModuleDropdowns();
+            renderAdminModulesList();
+            renderAdminPhasesList();
+            renderAdminQuestionsList();
+        }
+
+        async function deleteModule(idx) {
+            if (gameDatabase.modules.length <= 1) return;
+            gameDatabase.modules.splice(idx, 1);
+            await saveGameDatabase();
+            populateAdminModuleDropdowns();
+            renderAdminModulesList();
+            renderAdminPhasesList();
+            renderAdminQuestionsList();
+        }
+
+        async function resetDatabaseToDefault() {
+            gameDatabase = JSON.parse(JSON.stringify(defaultGameData));
+            await saveGameDatabase();
+            populateAdminModuleDropdowns();
+            renderAdminModulesList();
+            renderAdminPhasesList();
+            renderAdminQuestionsList();
+            showToast("Semua modul Tahun 6 dikembalikan kepada asal!");
+        }
+
+        /* ==========================================
+           7. PEMASANGAN PENDENGAR ACARA & PERMULAAN APLIKASI
+           ========================================== */
+        function bindAllStaticEvents() {
+            document.querySelectorAll('.avatar-option').forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    selectAvatar(this);
+                });
+            });
+
+            const btnStart = document.getElementById('btn-start-journey');
+            if (btnStart) {
+                btnStart.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    registerUser();
+                });
+            }
+
+            const nameInput = document.getElementById('player-name-input');
+            if (nameInput) {
+                nameInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        registerUser();
+                    }
+                });
+            }
+
+            const classInput = document.getElementById('player-class-input');
+            if (classInput) {
+                classInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        registerUser();
+                    }
+                });
+            }
+
+            document.getElementById('btn-open-admin').addEventListener('click', openAdminPanel);
+            document.getElementById('btn-verify-admin').addEventListener('click', verifyAdminLogin);
+            document.getElementById('admin-login-password').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') verifyAdminLogin();
+            });
+            document.getElementById('btn-exit-admin-login').addEventListener('click', exitAdminPanel);
+
+            document.getElementById('btn-back-login').addEventListener('click', backToLogin);
+            document.getElementById('btn-phases-to-menu').addEventListener('click', function() {
+                renderModuleMenu();
+                showScreen('screen-menu');
+            });
+            document.getElementById('btn-game-to-phases').addEventListener('click', function() {
+                openPhaseSelection(currentModuleId);
+            });
+            document.getElementById('btn-result-next').addEventListener('click', function() {
+                openPhaseSelection(currentModuleId);
+            });
+
+            document.getElementById('btn-admin-back').addEventListener('click', exitAdminPanel);
+            document.getElementById('btn-reset-db').addEventListener('click', resetDatabaseToDefault);
+            document.getElementById('btn-logout-admin').addEventListener('click', logoutAdmin);
+
+            document.querySelectorAll('.admin-tab-btn').forEach(function(tabBtn) {
+                tabBtn.addEventListener('click', function() {
+                    switchAdminTab(this.getAttribute('data-tab'), this);
+                });
+            });
+
+            document.getElementById('btn-toggle-projector').addEventListener('click', toggleProjectorMode);
+            document.getElementById('btn-clear-live').addEventListener('click', clearLiveSession);
+
+            document.getElementById('admin-q-module').addEventListener('change', onAdminModuleChange);
+            document.getElementById('admin-q-phase').addEventListener('change', renderAdminQuestionsList);
+            document.getElementById('admin-q-cancel-btn').addEventListener('click', resetQuestionForm);
+            document.getElementById('btn-save-question').addEventListener('click', saveAdminQuestion);
+
+            document.getElementById('admin-p-module').addEventListener('change', renderAdminPhasesList);
+            document.getElementById('btn-add-phase').addEventListener('click', addNewPhaseToModule);
+            document.getElementById('btn-add-module').addEventListener('click', addNewModule);
+        }
+
+        function initApp() {
+            bindAllStaticEvents();
+            initFirebaseRealtimeSync();
+            renderModuleMenu();
+
+            if (currentUser && currentUser.registered) {
+                document.getElementById('player-name-input').value = currentUser.name;
+                document.getElementById('player-class-input').value = currentUser.className || '6 Bestari';
+                document.getElementById('user-name-display').textContent = currentUser.name;
+                document.getElementById('user-class-display').textContent = (currentUser.className || '6 Bestari') + ' • KPM 2026';
+                document.getElementById('user-avatar-display').innerHTML = '<i class="fa-solid ' + currentUser.avatar + '"></i>';
+                document.getElementById('main-header').style.display = 'flex';
+                showScreen('screen-menu');
+            } else {
+                showScreen('screen-auth');
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>
